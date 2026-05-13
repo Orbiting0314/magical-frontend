@@ -79,6 +79,68 @@ export interface Meme {
   imgflipId: string;
 }
 
+export type SourceType =
+  | 'hkeaa-sample' | 'hkeaa-report' | 'hkeaa-stats' | 'hkeaa-assessment'
+  | 'past-paper-ocr' | 'answer-key-ocr' | 'tutorial' | 'school-reference'
+  | 'sample-note' | 'other';
+
+export type SourceFormat = 'pdf' | 'text' | 'markdown' | 'image' | 'url';
+export type ExtractedStatus = 'none' | 'raw' | 'cleaned' | 'verified';
+
+export interface SourceListItem {
+  _id: string;
+  title: string;
+  type: SourceType;
+  format: SourceFormat;
+  paper: number | null;
+  year: number | null;
+  origin: string | null;
+  originalFileName: string | null;
+  originalFileSize: number | null;
+  extractedStatus: ExtractedStatus;
+  tags: string[];
+  updatedAt: string;
+}
+
+export interface Source extends SourceListItem {
+  originalFileKey: string | null;
+  extractedText: string | null;
+  notes: { _id: string; title: string; paper: number; topic: string }[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export const SOURCE_TYPES: { value: SourceType | 'all'; label: string }[] = [
+  { value: 'all', label: 'All Types' },
+  { value: 'hkeaa-sample', label: 'HKEAA Sample' },
+  { value: 'hkeaa-report', label: 'HKEAA Report' },
+  { value: 'hkeaa-stats', label: 'HKEAA Statistics' },
+  { value: 'hkeaa-assessment', label: 'HKEAA Assessment' },
+  { value: 'past-paper-ocr', label: 'Past Paper OCR' },
+  { value: 'answer-key-ocr', label: 'Answer Key OCR' },
+  { value: 'tutorial', label: 'Tutorial' },
+  { value: 'school-reference', label: 'School Reference' },
+  { value: 'sample-note', label: 'Sample Note' },
+  { value: 'other', label: 'Other' },
+];
+
+export const SOURCE_FORMATS: { value: SourceFormat | 'all'; label: string }[] = [
+  { value: 'all', label: 'All Formats' },
+  { value: 'pdf', label: 'PDF' },
+  { value: 'text', label: 'Text' },
+  { value: 'markdown', label: 'Markdown' },
+  { value: 'image', label: 'Image' },
+  { value: 'url', label: 'URL' },
+];
+
+export const EXTRACTED_STATUS_OPTIONS: { value: ExtractedStatus | 'all'; label: string }[] = [
+  { value: 'all', label: 'All Status' },
+  { value: 'none', label: 'None' },
+  { value: 'raw', label: 'Raw' },
+  { value: 'cleaned', label: 'Cleaned' },
+  { value: 'verified', label: 'Verified' },
+];
+
 export const MEME_CATEGORIES: { value: MemeCategory | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'reaction', label: 'Reaction' },

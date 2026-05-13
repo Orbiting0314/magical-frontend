@@ -9,6 +9,8 @@ import KnowledgeBase from './pages/KnowledgeBase';
 import ComponentDetail from './pages/ComponentDetail';
 import AnswerKeys from './pages/AnswerKeys';
 import NoteEditor from './pages/NoteEditor';
+import Sources from './pages/Sources';
+import SourceDetail from './pages/SourceDetail';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +45,8 @@ export default function App() {
               <Route path="knowledge/:id" element={<ComponentDetail />} />
               <Route path="notes/:id" element={<NoteEditor />} />
               <Route path="answer-keys" element={<AnswerKeys />} />
+              <Route path="sources" element={<Sources />} />
+              <Route path="sources/:id" element={<SourceDetail />} />
             </Route>
           </Routes>
         </HashRouter>
