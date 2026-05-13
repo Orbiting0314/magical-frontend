@@ -25,7 +25,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_API_URL: http://tds3ghqj1c92eg5ap4nk9pd7.35.241.76.107.sslip.io/api
+          VITE_API_URL: https://tds3ghqj1c92eg5ap4nk9pd7.35.241.76.107.sslip.io/api
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
