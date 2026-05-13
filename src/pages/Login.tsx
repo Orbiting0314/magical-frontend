@@ -26,7 +26,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--navy)' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src="/logo.png" alt="Natty On English" className="w-20 h-20 mx-auto mb-3 rounded-full" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Natty On English" className="w-20 h-20 mx-auto mb-3 rounded-full" />
           <h1
             className="text-3xl font-semibold tracking-tight"
             style={{ color: 'var(--gold-light)' }}

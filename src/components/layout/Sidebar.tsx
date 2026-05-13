@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { FileText, BookOpen, Key, PanelLeftClose, PanelLeft } from 'lucide-react';
-import logoSrc from '/logo.png?url';
+const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
 
 const NAV_ITEMS = [
   { to: '/', icon: FileText, label: 'Notes' },
