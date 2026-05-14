@@ -178,7 +178,7 @@ export default function NoteEditor() {
     });
   }
 
-  if (isLoading) {
+  if (isLoading || !editor) {
     return <div className="text-gray-400 text-sm py-8 text-center">Loading note...</div>;
   }
 
