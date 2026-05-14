@@ -101,9 +101,9 @@ export interface Meme {
 }
 
 export type SourceType =
-  | 'hkeaa-sample' | 'hkeaa-report' | 'hkeaa-stats' | 'hkeaa-assessment'
-  | 'past-paper-ocr' | 'answer-key-ocr' | 'tutorial' | 'school-reference'
-  | 'sample-note' | 'other';
+  | 'past-paper' | 'past-paper-text' | 'answer-key' | 'candidate-sample'
+  | 'exam-report' | 'assessment-guide' | 'tutorial' | 'school-reference'
+  | 'teaching-note';
 
 export type SourceFormat = 'pdf' | 'text' | 'markdown' | 'image' | 'url';
 export type ExtractedStatus = 'none' | 'raw' | 'cleaned' | 'verified';
@@ -135,16 +135,15 @@ export interface Source extends SourceListItem {
 
 export const SOURCE_TYPES: { value: SourceType | 'all'; label: string }[] = [
   { value: 'all', label: 'All Types' },
-  { value: 'hkeaa-sample', label: 'HKEAA Sample' },
-  { value: 'hkeaa-report', label: 'HKEAA Report' },
-  { value: 'hkeaa-stats', label: 'HKEAA Statistics' },
-  { value: 'hkeaa-assessment', label: 'HKEAA Assessment' },
-  { value: 'past-paper-ocr', label: 'Past Paper OCR' },
-  { value: 'answer-key-ocr', label: 'Answer Key OCR' },
+  { value: 'past-paper', label: 'Past Paper' },
+  { value: 'past-paper-text', label: 'Past Paper Text' },
+  { value: 'answer-key', label: 'Answer Key' },
+  { value: 'candidate-sample', label: 'Candidate Sample' },
+  { value: 'exam-report', label: 'Exam Report' },
+  { value: 'assessment-guide', label: 'Assessment Guide' },
   { value: 'tutorial', label: 'Tutorial' },
   { value: 'school-reference', label: 'School Reference' },
-  { value: 'sample-note', label: 'Sample Note' },
-  { value: 'other', label: 'Other' },
+  { value: 'teaching-note', label: 'Teaching Note' },
 ];
 
 export const SOURCE_FORMATS: { value: SourceFormat | 'all'; label: string }[] = [

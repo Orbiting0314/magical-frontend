@@ -28,7 +28,7 @@ export default function SourceDetail() {
   });
 
   const [title, setTitle] = useState('');
-  const [type, setType] = useState<SourceType>('other');
+  const [type, setType] = useState<SourceType>('tutorial');
   const [paper, setPaper] = useState<number | ''>('');
   const [year, setYear] = useState<number | ''>('');
   const [origin, setOrigin] = useState('');

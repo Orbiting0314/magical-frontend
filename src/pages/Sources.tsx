@@ -19,17 +19,20 @@ const FORMAT_ICONS: Record<string, React.ElementType> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  'hkeaa-sample': 'bg-blue-100 text-blue-800',
-  'hkeaa-report': 'bg-indigo-100 text-indigo-800',
-  'hkeaa-stats': 'bg-violet-100 text-violet-800',
-  'hkeaa-assessment': 'bg-purple-100 text-purple-800',
-  'past-paper-ocr': 'bg-amber-100 text-amber-800',
-  'answer-key-ocr': 'bg-orange-100 text-orange-800',
+  'past-paper': 'bg-blue-100 text-blue-800',
+  'past-paper-text': 'bg-amber-100 text-amber-800',
+  'answer-key': 'bg-orange-100 text-orange-800',
+  'candidate-sample': 'bg-purple-100 text-purple-800',
+  'exam-report': 'bg-indigo-100 text-indigo-800',
+  'assessment-guide': 'bg-violet-100 text-violet-800',
   'tutorial': 'bg-emerald-100 text-emerald-800',
   'school-reference': 'bg-teal-100 text-teal-800',
-  'sample-note': 'bg-cyan-100 text-cyan-800',
-  'other': 'bg-gray-100 text-gray-700',
+  'teaching-note': 'bg-cyan-100 text-cyan-800',
 };
+
+const TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  SOURCE_TYPES.filter(t => t.value !== 'all').map(t => [t.value, t.label])
+);
 
 const TAG_COLORS: Record<string, string> = {
   'official': 'bg-blue-50 text-blue-700 border-blue-200',
@@ -89,8 +92,8 @@ function SourceRow({ s, onClick }: { s: SourceListItem; onClick: () => void }) {
         )}
       </td>
       <td className="px-4 py-3">
-        <span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[s.type] || TYPE_COLORS.other}`}>
-          {s.type}
+        <span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[s.type] || 'bg-gray-100 text-gray-700'}`}>
+          {TYPE_LABELS[s.type] || s.type}
         </span>
       </td>
       <td className="px-4 py-3">
@@ -159,7 +162,7 @@ export default function Sources() {
   const [statusFilter, setStatusFilter] = useUrlFilter('status', 'all');
   const [paperStr, setPaperStr] = useUrlFilter('paper', '0');
   const [tagsStr, setTagsStr] = useUrlFilter('tags', '');
-  const [groupBy, setGroupBy] = useUrlFilter('group', 'none');
+  const [groupBy, setGroupBy] = useUrlFilter('group', 'type');
 
   const paperFilter = Number(paperStr) || 0;
   const activeTags = tagsStr ? tagsStr.split(',') : [];
@@ -199,7 +202,7 @@ export default function Sources() {
     const groups: Record<string, SourceListItem[]> = {};
     for (const s of slice) {
       let key: string;
-      if (groupBy === 'type') key = s.type;
+      if (groupBy === 'type') key = TYPE_LABELS[s.type] || s.type;
       else if (groupBy === 'paper') key = s.paper ? `Paper ${s.paper}` : 'Unassigned';
       else key = extractDomain(s.origin);
       if (!groups[key]) groups[key] = [];
@@ -292,8 +295,8 @@ export default function Sources() {
           onChange={(e) => setGroupBy(e.target.value)}
           className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
         >
-          <option value="none">No grouping</option>
           <option value="type">Group by Type</option>
+          <option value="none">No grouping</option>
           <option value="paper">Group by Paper</option>
           <option value="origin">Group by Origin</option>
         </select>
