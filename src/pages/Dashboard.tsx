@@ -289,7 +289,7 @@ export default function Dashboard() {
     const groups: Record<string, NoteListItem[]> = {};
     for (const n of pagedNotes) {
       const key = groupBy === 'paper'
-        ? (PAPER_NAMES[n.paper] ? `Paper ${n.paper} - ${PAPER_NAMES[n.paper]}` : `Paper ${n.paper}`)
+        ? (PAPER_NAMES[n.paper] || `Paper ${n.paper}`)
         : n.status.charAt(0).toUpperCase() + n.status.slice(1);
       if (!groups[key]) groups[key] = [];
       groups[key].push(n);

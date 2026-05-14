@@ -21,8 +21,8 @@ const TYPES: { value: string; label: string }[] = [
 ];
 
 const LEVELS = [
-  { value: '', label: 'Show all' },
-  { value: 'all', label: 'Level: All' },
+  { value: '', label: 'Any Level' },
+  { value: 'all', label: 'All Levels' },
   { value: 'lev5+', label: 'Level 5+' },
   { value: 'lev3-4', label: 'Level 3-4' },
 ];
