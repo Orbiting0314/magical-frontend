@@ -10,6 +10,7 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import toast from 'react-hot-toast';
 import { getNote, updateNote, restoreNoteVersion } from '../api/notes';
 import { markdownToHtml, htmlToMarkdown } from '../lib/serializer';
 import { PAPER_NAMES, TOPIC_NAMES, noteUrl } from '../types';
@@ -17,6 +18,7 @@ import EditorToolbar from '../components/editor/EditorToolbar';
 import PdfPreview from '../components/editor/PdfPreview';
 import VersionHistory from '../components/editor/VersionHistory';
 import { useAutoSave } from '../components/editor/useAutoSave';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 const SPLIT_MIN = 30;
 const SPLIT_MAX = 80;
@@ -151,13 +153,20 @@ export default function NoteEditor() {
       updateNote(id!, { status: newStatus }),
     onSuccess: (updated) => {
       queryClient.setQueryData(['note', id], updated);
+      toast.success(updated.status === 'published' ? 'Note published' : 'Note unpublished');
     },
+    onError: () => { toast.error('Failed to update status'); },
   });
+
+  const [unpublishConfirmOpen, setUnpublishConfirmOpen] = useState(false);
 
   function handleStatusToggle() {
     if (!note) return;
-    const newStatus = note.status === 'published' ? 'draft' : 'published';
-    statusMutation.mutate(newStatus);
+    if (note.status === 'published') {
+      setUnpublishConfirmOpen(true);
+    } else {
+      statusMutation.mutate('published');
+    }
   }
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -166,6 +175,7 @@ export default function NoteEditor() {
     if (!id) return;
     updateNote(id, { addComponentUsed: [componentId] }).then((updated) => {
       queryClient.setQueryData(['note', id], updated);
+      toast.success('Component inserted');
     });
     markDirty();
   }
@@ -176,6 +186,9 @@ export default function NoteEditor() {
       queryClient.setQueryData(['note', id], updated);
       queryClient.invalidateQueries({ queryKey: ['note-versions', id] });
       setHistoryOpen(false);
+      toast.success('Version restored');
+    }).catch(() => {
+      toast.error('Failed to restore version');
     });
   }
 
@@ -275,6 +288,15 @@ export default function NoteEditor() {
         </div>
       )}
       </div>
+
+      <ConfirmDialog
+        open={unpublishConfirmOpen}
+        title="Unpublish this note?"
+        message="It will no longer be visible for export."
+        confirmLabel="Unpublish"
+        onConfirm={() => { setUnpublishConfirmOpen(false); statusMutation.mutate('draft'); }}
+        onCancel={() => setUnpublishConfirmOpen(false)}
+      />
     </div>
   );
 }

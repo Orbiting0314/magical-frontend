@@ -5,6 +5,7 @@ import { BookOpen, FileText, Key, Plus, X, Search, ArrowUpDown, FileQuestion } f
 import { getComponents } from '../api/components';
 import { getNotes, createNote } from '../api/notes';
 import { getAnswerKeys } from '../api/answerKeys';
+import toast from 'react-hot-toast';
 import { PAPER_NAMES, TOPIC_NAMES, noteUrl } from '../types';
 import type { NoteListItem } from '../types';
 import Pagination from '../components/ui/Pagination';
@@ -252,8 +253,10 @@ export default function Dashboard() {
     onSuccess: (note) => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       setCreateOpen(false);
+      toast.success('Note created');
       navigate(noteUrl(note));
     },
+    onError: () => { toast.error('Failed to create note'); },
   });
 
   const allNotes = noteData?.notes ?? [];

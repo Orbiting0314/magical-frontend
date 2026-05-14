@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import AppShell from './components/layout/AppShell';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -20,6 +21,12 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000,
       retry: 1,
+    },
+    mutations: {
+      onError: (error) => {
+        const msg = error instanceof Error ? error.message : 'Something went wrong';
+        toast.error(msg);
+      },
     },
   },
 });

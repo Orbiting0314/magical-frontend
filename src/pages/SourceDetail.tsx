@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Download, Save, Trash2, ExternalLink } from 'lucide-react';
 import { marked } from 'marked';
+import toast from 'react-hot-toast';
 import { getSource, updateSource, deleteSource, getSourceFileUrl } from '../api/sources';
 import { SOURCE_TYPES, EXTRACTED_STATUS_OPTIONS, noteUrl } from '../types';
 import type { ExtractedStatus, SourceType } from '../types';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 function stripFrontmatter(text: string): string {
   if (!text.startsWith('---')) return text;
@@ -71,16 +73,22 @@ export default function SourceDetail() {
       queryClient.invalidateQueries({ queryKey: ['source', id] });
       queryClient.invalidateQueries({ queryKey: ['sources'] });
       setDirty(false);
+      toast.success('Source saved');
     },
+    onError: () => { toast.error('Failed to save source'); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteSource(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources'] });
+      toast.success('Source deleted');
       navigate('/sources');
     },
+    onError: () => { toast.error('Failed to delete source'); },
   });
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   if (isLoading) {
     return <div className="p-8 text-center text-gray-400">Loading...</div>;
@@ -118,9 +126,7 @@ export default function SourceDetail() {
             </button>
           )}
           <button
-            onClick={() => {
-              if (confirm('Delete this source permanently?')) deleteMutation.mutate();
-            }}
+            onClick={() => setDeleteConfirmOpen(true)}
             className="p-1.5 rounded-md hover:bg-red-50 transition-colors text-gray-400 hover:text-red-600"
           >
             <Trash2 size={16} />
@@ -316,6 +322,16 @@ export default function SourceDetail() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Delete source"
+        message="Delete this source permanently? This cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => { setDeleteConfirmOpen(false); deleteMutation.mutate(); }}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
     </div>
   );
 }

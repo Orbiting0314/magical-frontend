@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Sidebar from './Sidebar';
 import { useAuth } from '../../hooks/useAuth';
 import { LogOut } from 'lucide-react';
@@ -10,6 +11,20 @@ export default function AppShell() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--cream)' }}>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          success: { duration: 3000 },
+          error: { duration: 5000 },
+          style: {
+            background: '#fffaf5',
+            color: '#1e293b',
+            border: '1px solid #f0e8e0',
+            fontSize: '0.875rem',
+          },
+        }}
+      />
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
       <div
         className="transition-all duration-200"
