@@ -246,3 +246,12 @@ export const TOPIC_NAMES: Record<string, string> = {
   'topic-year-map': 'Topic-Year Map',
   'text-type-year-map': 'Text Type Year Map',
 };
+
+export function noteUrl(note: { _id: string; title: string; paper?: number; topic?: string }): string {
+  const slug = [
+    note.paper ? `p${note.paper}` : '',
+    note.topic || '',
+    note.title,
+  ].filter(Boolean).join('-').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+  return `/notes/${note._id}/${slug}`;
+}

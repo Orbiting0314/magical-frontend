@@ -6,6 +6,8 @@ interface PdfPreviewProps {
   getMarkdown: () => string;
   level: string;
   title: string;
+  paper?: number;
+  topic?: string;
 }
 
 type Phase = 'idle' | 'preparing' | 'rendering' | 'done';
@@ -19,7 +21,16 @@ const PHASE_LABELS: Record<Phase, string> = {
 
 const AUTO_REFRESH_DELAY = 4000;
 
-export default function PdfPreview({ getMarkdown, level, title }: PdfPreviewProps) {
+function buildFilename(title: string, paper?: number, topic?: string, level?: string): string {
+  const parts: string[] = [];
+  if (paper) parts.push(`P${paper}`);
+  if (topic) parts.push(topic);
+  if (level && level !== 'all') parts.push(`Lev-${level}`);
+  parts.push(title);
+  return parts.join('_').replace(/[^a-zA-Z0-9_+-]/g, '_').replace(/_+/g, '_');
+}
+
+export default function PdfPreview({ getMarkdown, level, title, paper, topic }: PdfPreviewProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
@@ -101,7 +112,7 @@ export default function PdfPreview({ getMarkdown, level, title }: PdfPreviewProp
       const url = URL.createObjectURL(response.data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+      a.download = `${buildFilename(title, paper, topic, level)}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {

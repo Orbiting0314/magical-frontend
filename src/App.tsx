@@ -45,6 +45,7 @@ export default function App() {
               <Route path="knowledge" element={<KnowledgeBase />} />
               <Route path="knowledge/:id" element={<ComponentDetail />} />
               <Route path="notes/:id" element={<NoteEditor />} />
+              <Route path="notes/:id/:slug" element={<NoteEditor />} />
               <Route path="answer-keys" element={<AnswerKeys />} />
               <Route path="sources" element={<Sources />} />
               <Route path="sources/:id" element={<SourceDetail />} />

@@ -12,7 +12,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { getNote, updateNote, restoreNoteVersion } from '../api/notes';
 import { markdownToHtml, htmlToMarkdown } from '../lib/serializer';
-import { PAPER_NAMES, TOPIC_NAMES } from '../types';
+import { PAPER_NAMES, TOPIC_NAMES, noteUrl } from '../types';
 import EditorToolbar from '../components/editor/EditorToolbar';
 import PdfPreview from '../components/editor/PdfPreview';
 import VersionHistory from '../components/editor/VersionHistory';
@@ -74,7 +74,7 @@ function SplitPane({ children }: { children: [React.ReactElement, React.ReactEle
 }
 
 export default function NoteEditor() {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id: string; slug?: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const metadataRef = useRef<string[]>([]);
@@ -117,7 +117,8 @@ export default function NoteEditor() {
   useEffect(() => {
     if (!editor) return;
     function update() {
-      const text = editor!.getText();
+      if (!editor || editor.isDestroyed) return;
+      const text = editor.getText();
       const words = text.trim() ? text.trim().split(/\s+/).length : 0;
       setWordCount({ words, chars: text.length });
     }
@@ -127,7 +128,7 @@ export default function NoteEditor() {
   }, [editor]);
 
   const getMarkdown = useCallback(() => {
-    if (!editor) return note?.markdown || '';
+    if (!editor || editor.isDestroyed) return note?.markdown || '';
     const html = editor.getHTML();
     return htmlToMarkdown(html, metadataRef.current);
   }, [editor, note?.markdown]);
@@ -177,6 +178,13 @@ export default function NoteEditor() {
       setHistoryOpen(false);
     });
   }
+
+  useEffect(() => {
+    if (!note) return;
+    document.title = `${note.title} - Magical`;
+    if (!slug) navigate(noteUrl(note), { replace: true });
+    return () => { document.title = 'Magical'; };
+  }, [note?.title]);
 
   if (isLoading || !editor) {
     return <div className="text-gray-400 text-sm py-8 text-center">Loading note...</div>;
@@ -251,6 +259,8 @@ export default function NoteEditor() {
           getMarkdown={getMarkdown}
           level={note.level}
           title={note.title}
+          paper={note.paper}
+          topic={note.topic}
         />
       </SplitPane>
       </div>

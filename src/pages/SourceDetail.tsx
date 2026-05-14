@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Download, Save, Trash2, ExternalLink } from 'lucide-react';
 import { marked } from 'marked';
 import { getSource, updateSource, deleteSource, getSourceFileUrl } from '../api/sources';
-import { SOURCE_TYPES, EXTRACTED_STATUS_OPTIONS } from '../types';
+import { SOURCE_TYPES, EXTRACTED_STATUS_OPTIONS, noteUrl } from '../types';
 import type { ExtractedStatus, SourceType } from '../types';
 
 function stripFrontmatter(text: string): string {
@@ -233,7 +233,7 @@ export default function SourceDetail() {
               {source.notes.map((note) => (
                 <button
                   key={note._id}
-                  onClick={() => navigate(`/notes/${note._id}`)}
+                  onClick={() => navigate(noteUrl(note))}
                   className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
                   style={{ color: 'var(--navy)' }}
                 >

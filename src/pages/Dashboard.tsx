@@ -5,7 +5,7 @@ import { BookOpen, FileText, Key, Plus, X, Search, ArrowUpDown, FileQuestion } f
 import { getComponents } from '../api/components';
 import { getNotes, createNote } from '../api/notes';
 import { getAnswerKeys } from '../api/answerKeys';
-import { PAPER_NAMES, TOPIC_NAMES } from '../types';
+import { PAPER_NAMES, TOPIC_NAMES, noteUrl } from '../types';
 import type { NoteListItem } from '../types';
 
 function StatCard({ label, value, icon: Icon, onClick }: {
@@ -222,7 +222,7 @@ export default function Dashboard() {
     onSuccess: (note) => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       setCreateOpen(false);
-      navigate(`/notes/${note._id}`);
+      navigate(noteUrl(note));
     },
   });
 
@@ -376,7 +376,7 @@ export default function Dashboard() {
                 style={{ borderColor: '#f8f0ea' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--pink-light)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '')}
-                onClick={() => navigate(`/notes/${note._id}`)}
+                onClick={() => navigate(noteUrl(note))}
               >
                 <td className="px-5 py-3 font-medium" style={{ color: 'var(--navy)' }}>
                   {note.title}
