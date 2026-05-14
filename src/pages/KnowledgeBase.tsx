@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react';
 import { getHierarchy, getComponents } from '../api/components';
 import { COMPONENT_TYPE_COLORS, TOPIC_NAMES } from '../types';
 import type { ComponentType, HierarchyPaper } from '../types';
+import Pagination from '../components/ui/Pagination';
+
+const KB_PAGE_SIZE = 25;
 
 const TYPES: { value: string; label: string }[] = [
   { value: '', label: 'All types' },
@@ -18,8 +21,8 @@ const TYPES: { value: string; label: string }[] = [
 ];
 
 const LEVELS = [
-  { value: '', label: 'All levels' },
-  { value: 'all', label: 'All' },
+  { value: '', label: 'Show all' },
+  { value: 'all', label: 'Level: All' },
   { value: 'lev5+', label: 'Level 5+' },
   { value: 'lev3-4', label: 'Level 3-4' },
 ];
@@ -93,6 +96,7 @@ export default function KnowledgeBase() {
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchText), 250);
@@ -116,6 +120,8 @@ export default function KnowledgeBase() {
     queryKey: ['components', filters],
     queryFn: () => getComponents(filters as Record<string, string>),
   });
+
+  useEffect(() => { setPage(0); }, [typeFilter, levelFilter, selectedPaper, selectedTopic, debouncedSearch, tagFilter]);
 
   function handleSelectTopic(topic: string, paper: number) {
     if (selectedTopic === topic && selectedPaper === paper) {
@@ -141,6 +147,10 @@ export default function KnowledgeBase() {
   }
 
   const components = compData?.components ?? [];
+  const pagedComponents = useMemo(() =>
+    components.slice(page * KB_PAGE_SIZE, (page + 1) * KB_PAGE_SIZE),
+    [components, page]
+  );
   const hasFilters = searchText || typeFilter || levelFilter || tagFilter || selectedTopic;
 
   return (
@@ -231,7 +241,7 @@ export default function KnowledgeBase() {
               </tr>
             </thead>
             <tbody>
-              {components.map((comp) => (
+              {pagedComponents.map((comp) => (
                 <tr
                   key={comp._id}
                   className="border-b cursor-pointer transition-colors"
@@ -292,6 +302,7 @@ export default function KnowledgeBase() {
               )}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={KB_PAGE_SIZE} total={components.length} onPageChange={setPage} />
         </div>
       </div>
     </div>

@@ -7,6 +7,8 @@ import { getNotes, createNote } from '../api/notes';
 import { getAnswerKeys } from '../api/answerKeys';
 import { PAPER_NAMES, TOPIC_NAMES, noteUrl } from '../types';
 import type { NoteListItem } from '../types';
+import Pagination from '../components/ui/Pagination';
+import GroupSection from '../components/ui/GroupSection';
 
 function StatCard({ label, value, icon: Icon, onClick }: {
   label: string;
@@ -76,8 +78,11 @@ const TOPIC_BY_PAPER: Record<number, string[]> = {
   4: ['agree-disagree', 'advantages-disadvantages', 'cause-effect', 'giving-advice', 'hypothetical', 'making-comparisons', 'prioritising-ranking', 'problem-solution', 'general-speaking-skills'],
 };
 
+const DASH_PAGE_SIZE = 20;
+
 type SortKey = 'title' | 'paper' | 'status' | 'updatedAt';
 type SortDir = 'asc' | 'desc';
+type GroupBy = 'none' | 'paper' | 'status';
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'updatedAt', label: 'Last Modified' },
@@ -203,6 +208,29 @@ function CreateNoteModal({ open, onClose, onCreate }: {
   );
 }
 
+function NoteRow({ note, onClick }: { note: NoteListItem; onClick: () => void }) {
+  return (
+    <tr
+      className="border-b cursor-pointer transition-colors"
+      style={{ borderColor: '#f8f0ea' }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--pink-light)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+      onClick={onClick}
+    >
+      <td className="px-5 py-3 font-medium" style={{ color: 'var(--navy)' }}>{note.title}</td>
+      <td className="px-5 py-3">
+        <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'var(--cream)', color: 'var(--navy-light)' }}>
+          {PAPER_NAMES[note.paper] ? `P${note.paper}` : note.paper}
+        </span>
+      </td>
+      <td className="px-5 py-3 text-gray-600">{TOPIC_NAMES[note.topic] || note.topic}</td>
+      <td className="px-5 py-3"><LevelBadge level={note.level} /></td>
+      <td className="px-5 py-3"><StatusBadge status={note.status} /></td>
+      <td className="px-5 py-3 text-gray-500 text-xs">{new Date(note.updatedAt).toLocaleDateString()}</td>
+    </tr>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -212,6 +240,8 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [sortKey, setSortKey] = useState<SortKey>('updatedAt');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [page, setPage] = useState(0);
+  const [groupBy, setGroupBy] = useState<GroupBy>('none');
 
   const { data: compData } = useQuery({ queryKey: ['components-count'], queryFn: () => getComponents() });
   const { data: noteData } = useQuery({ queryKey: ['notes'], queryFn: () => getNotes() });
@@ -245,6 +275,31 @@ export default function Dashboard() {
     }
     return sortNotes(result, sortKey, sortDir);
   }, [allNotes, searchText, paperFilter, statusFilter, sortKey, sortDir]);
+
+  const pagedNotes = useMemo(() =>
+    filteredNotes.slice(page * DASH_PAGE_SIZE, (page + 1) * DASH_PAGE_SIZE),
+    [filteredNotes, page]
+  );
+
+  const grouped = useMemo(() => {
+    if (groupBy === 'none') return null;
+    const groups: Record<string, NoteListItem[]> = {};
+    for (const n of pagedNotes) {
+      const key = groupBy === 'paper'
+        ? (PAPER_NAMES[n.paper] ? `Paper ${n.paper} - ${PAPER_NAMES[n.paper]}` : `Paper ${n.paper}`)
+        : n.status.charAt(0).toUpperCase() + n.status.slice(1);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(n);
+    }
+    const entries = Object.entries(groups);
+    if (groupBy === 'paper') entries.sort((a, b) => a[0].localeCompare(b[0]));
+    else entries.sort((a, b) => b[1].length - a[1].length);
+    return entries;
+  }, [pagedNotes, groupBy]);
+
+  function handleFilterChange() {
+    setPage(0);
+  }
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -296,14 +351,14 @@ export default function Dashboard() {
       </div>
 
       <div className="card overflow-hidden">
-        {/* Filter bar */}
-        <div className="px-5 py-3 border-b flex items-center gap-3" style={{ borderColor: '#f0e8e0' }}>
+        {/* Filter bar -- sticky */}
+        <div className="px-5 py-3 border-b flex items-center gap-3 sticky top-0 z-10 bg-white rounded-t-xl" style={{ borderColor: '#f0e8e0' }}>
           <div className="relative flex-1 max-w-xs">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={(e) => { setSearchText(e.target.value); handleFilterChange(); }}
               placeholder="Search notes..."
               className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg"
               style={{ border: '1px solid var(--pink-light)' }}
@@ -311,7 +366,7 @@ export default function Dashboard() {
           </div>
           <select
             value={paperFilter}
-            onChange={(e) => setPaperFilter(e.target.value ? Number(e.target.value) : '')}
+            onChange={(e) => { setPaperFilter(e.target.value ? Number(e.target.value) : ''); handleFilterChange(); }}
             className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white"
           >
             <option value="">All papers</option>
@@ -321,12 +376,21 @@ export default function Dashboard() {
           </select>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); handleFilterChange(); }}
             className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white"
           >
             <option value="">All status</option>
             <option value="draft">Draft</option>
             <option value="published">Published</option>
+          </select>
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+            className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white"
+          >
+            <option value="none">No grouping</option>
+            <option value="paper">Group by Paper</option>
+            <option value="status">Group by Status</option>
           </select>
           <div className="flex items-center gap-1 ml-auto">
             <ArrowUpDown size={12} className="text-gray-400" />
@@ -336,6 +400,7 @@ export default function Dashboard() {
                 const [k, d] = e.target.value.split('-') as [SortKey, SortDir];
                 setSortKey(k);
                 setSortDir(d);
+                handleFilterChange();
               }}
               className="px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white"
             >
@@ -349,95 +414,81 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
-              <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('title')}>
-                Title {sortKey === 'title' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
-              </th>
-              <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('paper')}>
-                Paper {sortKey === 'paper' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
-              </th>
-              <th className="px-5 py-2.5">Topic</th>
-              <th className="px-5 py-2.5">Level</th>
-              <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('status')}>
-                Status {sortKey === 'status' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
-              </th>
-              <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('updatedAt')}>
-                Modified {sortKey === 'updatedAt' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredNotes.map((note) => (
-              <tr
-                key={note._id}
-                className="border-b cursor-pointer transition-colors"
-                style={{ borderColor: '#f8f0ea' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--pink-light)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '')}
-                onClick={() => navigate(noteUrl(note))}
-              >
-                <td className="px-5 py-3 font-medium" style={{ color: 'var(--navy)' }}>
-                  {note.title}
-                </td>
-                <td className="px-5 py-3">
-                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'var(--cream)', color: 'var(--navy-light)' }}>
-                    {PAPER_NAMES[note.paper] ? `P${note.paper}` : note.paper}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-gray-600">
-                  {TOPIC_NAMES[note.topic] || note.topic}
-                </td>
-                <td className="px-5 py-3"><LevelBadge level={note.level} /></td>
-                <td className="px-5 py-3"><StatusBadge status={note.status} /></td>
-                <td className="px-5 py-3 text-gray-500 text-xs">
-                  {new Date(note.updatedAt).toLocaleDateString()}
-                </td>
-              </tr>
-            ))}
-            {filteredNotes.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-5 py-12 text-center">
-                  {hasFilters ? (
-                    <div className="space-y-2">
-                      <Search size={28} className="mx-auto text-gray-300" />
-                      <p className="text-sm text-gray-400">No notes match your filters</p>
-                      <button
-                        onClick={() => { setSearchText(''); setPaperFilter(''); setStatusFilter(''); }}
-                        className="text-xs font-medium"
-                        style={{ color: 'var(--pink-dark)' }}
-                      >
-                        Clear filters
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <FileQuestion size={32} className="mx-auto text-gray-300" />
-                      <p className="text-sm font-medium text-gray-500">No notes yet</p>
-                      <p className="text-xs text-gray-400 max-w-xs mx-auto">
-                        Create your first note to start building DSE English teaching materials.
-                        Each note targets a specific paper, topic, and level.
-                      </p>
-                      <button
-                        onClick={() => setCreateOpen(true)}
-                        className="btn-pink inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium"
-                      >
-                        <Plus size={14} />
-                        Create your first note
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
+        {filteredNotes.length === 0 ? (
+          <div className="px-5 py-12 text-center">
+            {hasFilters ? (
+              <div className="space-y-2">
+                <Search size={28} className="mx-auto text-gray-300" />
+                <p className="text-sm text-gray-400">No notes match your filters</p>
+                <button
+                  onClick={() => { setSearchText(''); setPaperFilter(''); setStatusFilter(''); handleFilterChange(); }}
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--pink-dark)' }}
+                >
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <FileQuestion size={32} className="mx-auto text-gray-300" />
+                <p className="text-sm font-medium text-gray-500">No notes yet</p>
+                <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                  Create your first note to start building DSE English teaching materials.
+                  Each note targets a specific paper, topic, and level.
+                </p>
+                <button
+                  onClick={() => setCreateOpen(true)}
+                  className="btn-pink inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium"
+                >
+                  <Plus size={14} />
+                  Create your first note
+                </button>
+              </div>
             )}
-          </tbody>
-        </table>
+          </div>
+        ) : grouped ? (
+          <div>
+            {grouped.map(([group, items], idx) => (
+              <GroupSection key={group} title={group} count={items.length} defaultOpen={idx < 4}>
+                <table className="w-full text-sm">
+                  <tbody>
+                    {items.map((note) => (
+                      <NoteRow key={note._id} note={note} onClick={() => navigate(noteUrl(note))} />
+                    ))}
+                  </tbody>
+                </table>
+              </GroupSection>
+            ))}
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('title')}>
+                  Title {sortKey === 'title' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
+                </th>
+                <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('paper')}>
+                  Paper {sortKey === 'paper' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
+                </th>
+                <th className="px-5 py-2.5">Topic</th>
+                <th className="px-5 py-2.5">Level</th>
+                <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('status')}>
+                  Status {sortKey === 'status' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
+                </th>
+                <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('updatedAt')}>
+                  Modified {sortKey === 'updatedAt' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagedNotes.map((note) => (
+                <NoteRow key={note._id} note={note} onClick={() => navigate(noteUrl(note))} />
+              ))}
+            </tbody>
+          </table>
+        )}
 
-        {/* Footer count */}
-        <div className="px-5 py-2 border-t text-[11px]" style={{ borderColor: '#f0e8e0', color: 'var(--navy-light)' }}>
-          {filteredNotes.length} of {allNotes.length} notes
-        </div>
+        <Pagination page={page} pageSize={DASH_PAGE_SIZE} total={filteredNotes.length} onPageChange={setPage} />
       </div>
     </div>
   );

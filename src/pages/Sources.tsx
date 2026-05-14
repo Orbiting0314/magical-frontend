@@ -1,11 +1,14 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, FileDown, FileText, Globe, Image, ChevronDown, ChevronRight, X, FileStack } from 'lucide-react';
+import { Search, FileDown, FileText, Globe, Image, X, FileStack } from 'lucide-react';
 import { getSources, getSourceTags } from '../api/sources';
 import { SOURCE_TYPES, SOURCE_FORMATS, EXTRACTED_STATUS_OPTIONS } from '../types';
 import type { SourceListItem } from '../types';
-import { useState } from 'react';
+import Pagination from '../components/ui/Pagination';
+import GroupSection from '../components/ui/GroupSection';
+
+const SRC_PAGE_SIZE = 25;
 
 const FORMAT_ICONS: Record<string, React.ElementType> = {
   pdf: FileDown,
@@ -118,25 +121,6 @@ function SourceRow({ s, onClick }: { s: SourceListItem; onClick: () => void }) {
   );
 }
 
-function GroupSection({ title, count, children, defaultOpen = false }: {
-  title: string; count: number; children: React.ReactNode; defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-b border-gray-100 last:border-b-0">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full px-5 py-2.5 text-left hover:bg-gray-50 transition-colors"
-      >
-        {open ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
-        <span className="text-sm font-semibold" style={{ color: 'var(--navy)' }}>{title}</span>
-        <span className="text-xs text-gray-400 ml-1">({count})</span>
-      </button>
-      {open && children}
-    </div>
-  );
-}
-
 function TableHeader() {
   return (
     <thead>
@@ -202,11 +186,18 @@ export default function Sources() {
   const allSources = data?.sources ?? [];
   const total = data?.total ?? 0;
   const topTags = (tagData ?? []).slice(0, 15);
+  const [page, setPage] = useState(0);
+
+  const pagedSources = useMemo(() =>
+    allSources.slice(page * SRC_PAGE_SIZE, (page + 1) * SRC_PAGE_SIZE),
+    [allSources, page]
+  );
 
   const grouped = useMemo(() => {
     if (groupBy === 'none') return null;
+    const slice = pagedSources;
     const groups: Record<string, SourceListItem[]> = {};
-    for (const s of allSources) {
+    for (const s of slice) {
       let key: string;
       if (groupBy === 'type') key = s.type;
       else if (groupBy === 'paper') key = s.paper ? `Paper ${s.paper}` : 'Unassigned';
@@ -215,11 +206,12 @@ export default function Sources() {
       groups[key].push(s);
     }
     return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
-  }, [allSources, groupBy]);
+  }, [pagedSources, groupBy]);
 
   function toggleTag(tag: string) {
     const next = activeTags.includes(tag) ? activeTags.filter(t => t !== tag) : [...activeTags, tag];
     setTagsStr(next.join(','));
+    setPage(0);
   }
 
   function clearAllFilters() {
@@ -229,6 +221,7 @@ export default function Sources() {
     setStatusFilter('all');
     setPaperStr('0');
     setTagsStr('');
+    setPage(0);
   }
 
   const hasActiveFilters = search || typeFilter !== 'all' || formatFilter !== 'all' || statusFilter !== 'all' || paperFilter !== 0 || activeTags.length > 0;
@@ -260,21 +253,21 @@ export default function Sources() {
             type="text"
             placeholder="Search title and content..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg"
             style={{ border: '1px solid var(--pink-light)' }}
           />
         </div>
 
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
           {SOURCE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
 
-        <select value={formatFilter} onChange={(e) => setFormatFilter(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+        <select value={formatFilter} onChange={(e) => { setFormatFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
           {SOURCE_FORMATS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
 
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
           {EXTRACTED_STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
 
@@ -282,7 +275,7 @@ export default function Sources() {
           {[0, 1, 2, 3, 4].map((p) => (
             <button
               key={p}
-              onClick={() => setPaperStr(String(p))}
+              onClick={() => { setPaperStr(String(p)); setPage(0); }}
               className="px-2.5 py-1.5 text-xs font-medium rounded-md border transition-colors"
               style={paperFilter === p
                 ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
@@ -394,12 +387,13 @@ export default function Sources() {
           <table className="w-full text-sm">
             <TableHeader />
             <tbody>
-              {allSources.map((s) => (
+              {pagedSources.map((s) => (
                 <SourceRow key={s._id} s={s} onClick={() => navigate(`/sources/${s._id}`)} />
               ))}
             </tbody>
           </table>
         )}
+        <Pagination page={page} pageSize={SRC_PAGE_SIZE} total={allSources.length} onPageChange={setPage} />
       </div>
     </div>
   );
