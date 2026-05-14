@@ -22,7 +22,7 @@ const SPLIT_MIN = 30;
 const SPLIT_MAX = 80;
 const SPLIT_DEFAULT = 60;
 
-function SplitPane({ children }: { children: [JSX.Element, JSX.Element] }) {
+function SplitPane({ children }: { children: [React.ReactElement, React.ReactElement] }) {
   const [splitPct, setSplitPct] = useState(SPLIT_DEFAULT);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);

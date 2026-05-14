@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, FileDown, FileText, Globe, Image, ChevronDown, ChevronRight, X, FileStack } from 'lucide-react';
 import { getSources, getSourceTags } from '../api/sources';
 import { SOURCE_TYPES, SOURCE_FORMATS, EXTRACTED_STATUS_OPTIONS } from '../types';
-import type { SourceType, SourceFormat, ExtractedStatus, SourceListItem } from '../types';
+import type { SourceListItem } from '../types';
 import { useState } from 'react';
 
 const FORMAT_ICONS: Record<string, React.ElementType> = {
@@ -50,8 +50,6 @@ const TAG_COLORS: Record<string, string> = {
   'teaching-notes': 'bg-violet-50 text-violet-700 border-violet-200',
   'school': 'bg-teal-50 text-teal-700 border-teal-200',
 };
-
-type GroupBy = 'none' | 'type' | 'paper' | 'origin';
 
 function formatBytes(bytes: number | null) {
   if (!bytes) return '-';

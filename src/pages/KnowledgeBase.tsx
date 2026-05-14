@@ -48,8 +48,7 @@ function PaperTree({ paper, selectedTopic, selectedPaper, onSelectTopic }: {
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition-colors"
-        style={{ background: isPaperSelected ? 'var(--pink-light)' : undefined }}
-        style={{ color: 'var(--navy)' }}
+        style={{ background: isPaperSelected ? 'var(--pink-light)' : undefined, color: 'var(--navy)' }}
       >
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <span className="flex-1 text-left">{paper.name}</span>
