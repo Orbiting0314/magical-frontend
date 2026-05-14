@@ -13,12 +13,24 @@ interface SourceFilters {
   format?: string;
   extractedStatus?: string;
   search?: string;
+  tags?: string;
+  tag?: string;
   limit?: number;
   skip?: number;
 }
 
+interface TagCount {
+  tag: string;
+  count: number;
+}
+
 export async function getSources(filters?: SourceFilters) {
   const { data } = await api.get<SourceListResponse>('/sources', { params: filters });
+  return data;
+}
+
+export async function getSourceTags() {
+  const { data } = await api.get<TagCount[]>('/sources/tags');
   return data;
 }
 

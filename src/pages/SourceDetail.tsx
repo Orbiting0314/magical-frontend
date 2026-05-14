@@ -1,10 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Download, Save, Trash2, ExternalLink } from 'lucide-react';
+import { marked } from 'marked';
 import { getSource, updateSource, deleteSource, getSourceFileUrl } from '../api/sources';
 import { SOURCE_TYPES, EXTRACTED_STATUS_OPTIONS } from '../types';
 import type { ExtractedStatus, SourceType } from '../types';
+
+function stripFrontmatter(text: string): string {
+  if (!text.startsWith('---')) return text;
+  const end = text.indexOf('---', 3);
+  if (end === -1) return text;
+  return text.slice(end + 3).trim();
+}
 
 export default function SourceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +34,12 @@ export default function SourceDetail() {
   const [extractedText, setExtractedText] = useState('');
   const [extractedStatus, setExtractedStatus] = useState<ExtractedStatus>('none');
   const [dirty, setDirty] = useState(false);
+  const [viewMode, setViewMode] = useState<'raw' | 'rendered'>('raw');
+
+  const renderedHtml = useMemo(() => {
+    if (viewMode !== 'rendered' || !extractedText) return '';
+    return marked.parse(stripFrontmatter(extractedText), { async: false }) as string;
+  }, [viewMode, extractedText]);
 
   useEffect(() => {
     if (source) {
@@ -257,17 +271,48 @@ export default function SourceDetail() {
 
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700">Extracted Text</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm font-semibold text-gray-700">Extracted Text</h2>
+                <div className="flex rounded-md border border-gray-200 overflow-hidden">
+                  <button
+                    onClick={() => setViewMode('raw')}
+                    className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                      viewMode === 'raw'
+                        ? 'bg-blue-50 text-blue-700 border-r border-blue-200'
+                        : 'bg-white text-gray-500 border-r border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    Raw
+                  </button>
+                  <button
+                    onClick={() => setViewMode('rendered')}
+                    className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                      viewMode === 'rendered'
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    Rendered
+                  </button>
+                </div>
+              </div>
               <span className="text-xs text-gray-400">
                 {extractedText.length.toLocaleString()} chars
               </span>
             </div>
-            <textarea
-              value={extractedText}
-              onChange={(e) => { setExtractedText(e.target.value); markDirty(); }}
-              className="w-full h-96 px-3 py-2 text-sm border border-gray-200 rounded-lg font-mono leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="Paste or edit extracted text here..."
-            />
+            {viewMode === 'raw' ? (
+              <textarea
+                value={extractedText}
+                onChange={(e) => { setExtractedText(e.target.value); markDirty(); }}
+                className="w-full h-96 px-3 py-2 text-sm border border-gray-200 rounded-lg font-mono leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-200"
+                placeholder="Paste or edit extracted text here..."
+              />
+            ) : (
+              <div
+                className="md-content h-96 overflow-y-auto px-3 py-2 text-sm border border-gray-200 rounded-lg leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: renderedHtml }}
+              />
+            )}
           </div>
         </div>
       </div>

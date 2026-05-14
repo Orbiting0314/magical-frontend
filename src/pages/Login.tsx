@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
+const fullLogo = `${import.meta.env.BASE_URL}magical-logo.png`;
+
 export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,23 +25,31 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--navy)' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--cream)' }}>
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Natty On English" className="w-20 h-20 mx-auto mb-3 rounded-full" />
+        <div className="text-center mb-6">
+          <img
+            src={fullLogo}
+            alt="Magical - notes by miss on"
+            className="w-44 h-44 mx-auto object-contain"
+          />
           <h1
-            className="text-3xl font-semibold tracking-tight"
-            style={{ color: 'var(--gold-light)' }}
+            className="text-3xl font-semibold tracking-tight mt-2"
+            style={{ color: 'var(--pink-dark)', fontFamily: "'Playfair Display', Georgia, serif" }}
           >
-            Magical
+            magical
           </h1>
-          <p className="mt-1 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            Natty On English
+          <p className="mt-0.5 text-sm" style={{ color: 'var(--navy-light)' }}>
+            notes by miss on
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8 space-y-5">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-2xl shadow-lg p-8 space-y-5"
+          style={{ background: 'white', border: '1px solid #f0e8e0' }}
+        >
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="password" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--navy)' }}>
               Password
             </label>
             <input
@@ -47,19 +57,19 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              className="w-full px-3 py-2.5 rounded-lg text-sm"
+              style={{ border: '1px solid var(--pink-light)' }}
               placeholder="Enter password"
               autoFocus
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-red-500">{error}</p>
           )}
           <button
             type="submit"
             disabled={loading || !password}
-            className="w-full py-2.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-            style={{ background: 'var(--gold-dark)' }}
+            className="btn-pink w-full py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>

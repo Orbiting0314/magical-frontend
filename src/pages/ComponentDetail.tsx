@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Copy, Check } from 'lucide-react';
 import { marked } from 'marked';
 import { getComponent } from '../api/components';
 import { COMPONENT_TYPE_COLORS, PAPER_NAMES, TOPIC_NAMES } from '../types';
@@ -8,6 +9,7 @@ import { COMPONENT_TYPE_COLORS, PAPER_NAMES, TOPIC_NAMES } from '../types';
 export default function ComponentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
 
   const { data: component, isLoading } = useQuery({
     queryKey: ['component', id],
@@ -43,16 +45,36 @@ export default function ComponentDetail() {
 
       <div className="flex gap-6">
         {/* Main content */}
-        <div className="flex-1 bg-white rounded-xl border border-gray-200 p-6 overflow-hidden">
-          <div
-            className="md-content"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
+        <div className="flex-1 card overflow-hidden">
+          <div className="flex items-center justify-end px-6 pt-4 pb-0">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(component.content).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                });
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                copied
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+              {copied ? 'Copied' : 'Copy Markdown'}
+            </button>
+          </div>
+          <div className="px-6 pb-6 pt-3">
+            <div
+              className="md-content"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>
         </div>
 
         {/* Metadata sidebar */}
         <div className="w-64 shrink-0 space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="card p-5 space-y-4">
             <div>
               <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Type</div>
               <span className={`px-2.5 py-1 rounded text-xs font-medium ${typeColor.bg} ${typeColor.text}`}>

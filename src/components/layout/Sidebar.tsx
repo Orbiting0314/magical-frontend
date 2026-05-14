@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { FileText, BookOpen, Key, Library, PanelLeftClose, PanelLeft } from 'lucide-react';
-const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
+
+const fullLogo = `${import.meta.env.BASE_URL}magical-logo.png`;
 
 const NAV_ITEMS = [
   { to: '/', icon: FileText, label: 'Notes' },
@@ -17,27 +18,38 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
-      className={`fixed top-0 left-0 h-screen flex flex-col transition-all duration-200 z-30 ${
+      className={`fixed top-0 left-0 h-screen flex flex-col transition-all duration-200 z-30 border-r ${
         collapsed ? 'w-16' : 'w-60'
       }`}
-      style={{ background: 'var(--navy)' }}
+      style={{ background: 'white', borderColor: '#f0e8e0' }}
     >
-      <div className="flex items-center justify-between h-14 px-3">
+      {/* Logo area */}
+      <div className="flex items-center justify-between px-3" style={{ height: collapsed ? '3.5rem' : 'auto', paddingTop: collapsed ? 0 : '0.75rem' }}>
         <div className="flex items-center gap-2">
-          <img src={logoSrc} alt="Natty On English" className="w-7 h-7 rounded-full" />
-          {!collapsed && (
-            <span className="text-lg font-semibold tracking-tight" style={{ color: 'var(--gold-light)' }}>
-              Magical
-            </span>
+          {collapsed ? (
+            <img src={fullLogo} alt="Magical" className="w-9 h-9 rounded-lg object-cover" />
+          ) : (
+            <div className="flex flex-col items-center w-full py-2">
+              <img src={fullLogo} alt="Magical" className="w-28 h-28 object-contain" />
+              <span
+                className="text-lg font-semibold tracking-tight mt-1"
+                style={{ color: 'var(--pink-dark)', fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                magical
+              </span>
+              <span className="text-[10px] tracking-wide" style={{ color: 'var(--navy-light)' }}>
+                notes by miss on
+              </span>
+            </div>
           )}
         </div>
         {!collapsed && (
           <button
             onClick={onToggle}
-            className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
-            style={{ color: 'rgba(255,255,255,0.6)' }}
+            className="absolute top-3 right-3 p-1.5 rounded-md transition-colors"
+            style={{ color: 'var(--navy-light)' }}
           >
-            <PanelLeftClose size={18} />
+            <PanelLeftClose size={16} />
           </button>
         )}
       </div>
@@ -45,14 +57,19 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {collapsed && (
         <button
           onClick={onToggle}
-          className="mx-auto p-1.5 rounded-md hover:bg-white/10 transition-colors"
-          style={{ color: 'rgba(255,255,255,0.6)' }}
+          className="mx-auto p-1.5 rounded-md transition-colors mt-1"
+          style={{ color: 'var(--navy-light)' }}
         >
-          <PanelLeft size={18} />
+          <PanelLeft size={16} />
         </button>
       )}
 
-      <nav className="flex-1 px-2 py-3 space-y-1">
+      {/* Divider */}
+      {!collapsed && (
+        <div className="mx-4 my-2 border-t" style={{ borderColor: 'var(--pink-light)' }} />
+      )}
+
+      <nav className="flex-1 px-2 py-2 space-y-0.5">
         {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -69,7 +86,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </nav>
 
       {!collapsed && (
-        <div className="px-4 py-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+        <div className="px-4 py-3 text-[10px] tracking-wide" style={{ color: 'var(--pink-dark)', opacity: 0.5 }}>
           Natty On English
         </div>
       )}

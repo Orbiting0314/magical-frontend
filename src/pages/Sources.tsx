@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { Search, FileDown, FileText, Globe, Image, ChevronDown, ChevronRight } from 'lucide-react';
-import { getSources } from '../api/sources';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, FileDown, FileText, Globe, Image, ChevronDown, ChevronRight, X, FileStack } from 'lucide-react';
+import { getSources, getSourceTags } from '../api/sources';
 import { SOURCE_TYPES, SOURCE_FORMATS, EXTRACTED_STATUS_OPTIONS } from '../types';
 import type { SourceType, SourceFormat, ExtractedStatus, SourceListItem } from '../types';
+import { useState } from 'react';
 
 const FORMAT_ICONS: Record<string, React.ElementType> = {
   pdf: FileDown,
@@ -27,33 +28,30 @@ const TYPE_COLORS: Record<string, string> = {
   'other': 'bg-gray-100 text-gray-700',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  none: 'bg-gray-100 text-gray-500',
-  raw: 'bg-yellow-100 text-yellow-800',
-  cleaned: 'bg-blue-100 text-blue-800',
-  verified: 'bg-emerald-100 text-emerald-800',
-};
-
 const TAG_COLORS: Record<string, string> = {
+  'official': 'bg-blue-50 text-blue-700 border-blue-200',
+  'third-party': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'internal': 'bg-violet-50 text-violet-700 border-violet-200',
   'question-types': 'bg-rose-50 text-rose-700 border-rose-200',
   'text-types': 'bg-blue-50 text-blue-700 border-blue-200',
   'strategies': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'sample-essays': 'bg-purple-50 text-purple-700 border-purple-200',
+  'sample-answers': 'bg-purple-50 text-purple-700 border-purple-200',
   'grading': 'bg-amber-50 text-amber-700 border-amber-200',
   'topics': 'bg-teal-50 text-teal-700 border-teal-200',
+  'topics-by-year': 'bg-teal-50 text-teal-700 border-teal-200',
   'sentence-patterns': 'bg-indigo-50 text-indigo-700 border-indigo-200',
   'exam-data': 'bg-orange-50 text-orange-700 border-orange-200',
   'syllabus': 'bg-cyan-50 text-cyan-700 border-cyan-200',
   'vocabulary': 'bg-pink-50 text-pink-700 border-pink-200',
   'past-paper': 'bg-gray-50 text-gray-700 border-gray-200',
+  'answers': 'bg-orange-50 text-orange-700 border-orange-200',
+  'examiner-commentary': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'teaching-notes': 'bg-violet-50 text-violet-700 border-violet-200',
+  'school': 'bg-teal-50 text-teal-700 border-teal-200',
 };
 
-const CONTENT_TAGS = [
-  'question-types', 'text-types', 'strategies', 'sample-essays',
-  'grading', 'topics', 'sentence-patterns', 'exam-data', 'syllabus', 'vocabulary',
-];
-
-type GroupBy = 'none' | 'type' | 'paper' | 'tags';
+type GroupBy = 'none' | 'type' | 'paper' | 'origin';
 
 function formatBytes(bytes: number | null) {
   if (!bytes) return '-';
@@ -62,33 +60,31 @@ function formatBytes(bytes: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function TagChip({ tag }: { tag: string }) {
+function extractDomain(origin: string | null | undefined): string {
+  if (!origin) return '-';
+  try {
+    if (origin.startsWith('http')) return new URL(origin).hostname.replace(/^www\./, '');
+    return origin;
+  } catch { return origin; }
+}
+
+function TagChip({ tag, small }: { tag: string; small?: boolean }) {
   const colors = TAG_COLORS[tag] || 'bg-gray-50 text-gray-600 border-gray-200';
-  return (
-    <span className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded border ${colors}`}>
-      {tag}
-    </span>
-  );
+  const size = small ? 'px-1 py-0 text-[9px]' : 'px-1.5 py-0.5 text-[10px]';
+  return <span className={`inline-block ${size} font-medium rounded border ${colors}`}>{tag}</span>;
 }
 
 function SourceRow({ s, onClick }: { s: SourceListItem; onClick: () => void }) {
   const FormatIcon = FORMAT_ICONS[s.format] || FileText;
-  const contentTags = s.tags.filter(t => CONTENT_TAGS.includes(t));
+  const displayTags = (s.tags || []).slice(0, 3);
+  const overflow = (s.tags || []).length - 3;
 
   return (
-    <tr
-      className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors"
-      onClick={onClick}
-    >
-      <td className="px-5 py-3 max-w-sm">
+    <tr className="border-b cursor-pointer transition-colors" style={{ borderColor: '#f8f0ea' }} onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--pink-light)')} onMouseLeave={(e) => (e.currentTarget.style.background = '')} onClick={onClick}>
+      <td className="px-5 py-3 max-w-xs">
         <div className="font-medium truncate" style={{ color: 'var(--navy)' }}>{s.title}</div>
-        {contentTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
-            {contentTags.slice(0, 4).map(t => <TagChip key={t} tag={t} />)}
-            {contentTags.length > 4 && (
-              <span className="text-[10px] text-gray-400">+{contentTags.length - 4}</span>
-            )}
-          </div>
+        {s.snippet && (
+          <div className="text-[11px] text-gray-400 truncate mt-0.5">{s.snippet}</div>
         )}
       </td>
       <td className="px-4 py-3">
@@ -103,27 +99,29 @@ function SourceRow({ s, onClick }: { s: SourceListItem; onClick: () => void }) {
         </span>
       </td>
       <td className="px-4 py-3 text-gray-600">{s.paper ? `P${s.paper}` : '-'}</td>
-      <td className="px-4 py-3 text-gray-600">{s.year ?? '-'}</td>
-      <td className="px-4 py-3 text-gray-500 text-xs">{formatBytes(s.originalFileSize)}</td>
       <td className="px-4 py-3">
-        <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[s.extractedStatus] || STATUS_COLORS.none}`}>
-          {s.extractedStatus}
-        </span>
+        <div className="flex flex-wrap gap-0.5">
+          {displayTags.map(t => <TagChip key={t} tag={t} small />)}
+          {overflow > 0 && <span className="text-[9px] text-gray-400 self-center">+{overflow}</span>}
+        </div>
       </td>
+      <td className="px-4 py-3">
+        {s.noteCount > 0 ? (
+          <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+            <FileStack size={12} />
+            {s.noteCount}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-300">-</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-gray-500 text-xs">{formatBytes(s.originalFileSize)}</td>
     </tr>
   );
 }
 
-function GroupSection({
-  title,
-  count,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  count: number;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
+function GroupSection({ title, count, children, defaultOpen = false }: {
+  title: string; count: number; children: React.ReactNode; defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -149,23 +147,40 @@ function TableHeader() {
         <th className="px-4 py-2.5">Type</th>
         <th className="px-4 py-2.5">Format</th>
         <th className="px-4 py-2.5">Paper</th>
-        <th className="px-4 py-2.5">Year</th>
+        <th className="px-4 py-2.5">Tags</th>
+        <th className="px-4 py-2.5">Notes</th>
         <th className="px-4 py-2.5">Size</th>
-        <th className="px-4 py-2.5">Text</th>
       </tr>
     </thead>
   );
 }
 
+function useUrlFilter(key: string, defaultVal: string): [string, (v: string) => void] {
+  const [params, setParams] = useSearchParams();
+  const value = params.get(key) || defaultVal;
+  const set = useCallback((v: string) => {
+    setParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (v === defaultVal) next.delete(key);
+      else next.set(key, v);
+      return next;
+    }, { replace: true });
+  }, [key, defaultVal, setParams]);
+  return [value, set];
+}
+
 export default function Sources() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<SourceType | 'all'>('all');
-  const [formatFilter, setFormatFilter] = useState<SourceFormat | 'all'>('all');
-  const [statusFilter, setStatusFilter] = useState<ExtractedStatus | 'all'>('all');
-  const [paperFilter, setPaperFilter] = useState<number | 0>(0);
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
-  const [groupBy, setGroupBy] = useState<GroupBy>('none');
+  const [search, setSearch] = useUrlFilter('q', '');
+  const [typeFilter, setTypeFilter] = useUrlFilter('type', 'all');
+  const [formatFilter, setFormatFilter] = useUrlFilter('format', 'all');
+  const [statusFilter, setStatusFilter] = useUrlFilter('status', 'all');
+  const [paperStr, setPaperStr] = useUrlFilter('paper', '0');
+  const [tagsStr, setTagsStr] = useUrlFilter('tags', '');
+  const [groupBy, setGroupBy] = useUrlFilter('group', 'none');
+
+  const paperFilter = Number(paperStr) || 0;
+  const activeTags = tagsStr ? tagsStr.split(',') : [];
 
   const params: Record<string, string | number> = { limit: 500 };
   if (search) params.search = search;
@@ -173,65 +188,69 @@ export default function Sources() {
   if (formatFilter !== 'all') params.format = formatFilter;
   if (statusFilter !== 'all') params.extractedStatus = statusFilter;
   if (paperFilter) params.paper = paperFilter;
+  if (activeTags.length > 0) params.tags = activeTags.join(',');
 
   const { data, isLoading } = useQuery({
     queryKey: ['sources', params],
     queryFn: () => getSources(params),
   });
 
+  const { data: tagData } = useQuery({
+    queryKey: ['source-tags'],
+    queryFn: getSourceTags,
+    staleTime: 60_000,
+  });
+
   const allSources = data?.sources ?? [];
   const total = data?.total ?? 0;
-
-  const filteredSources = useMemo(() => {
-    if (!tagFilter) return allSources;
-    return allSources.filter(s => s.tags.includes(tagFilter));
-  }, [allSources, tagFilter]);
+  const topTags = (tagData ?? []).slice(0, 15);
 
   const grouped = useMemo(() => {
     if (groupBy === 'none') return null;
-
     const groups: Record<string, SourceListItem[]> = {};
-    for (const s of filteredSources) {
+    for (const s of allSources) {
       let key: string;
-      if (groupBy === 'type') {
-        key = s.type;
-      } else if (groupBy === 'paper') {
-        key = s.paper ? `Paper ${s.paper}` : 'General';
-      } else {
-        const contentTags = s.tags.filter(t => CONTENT_TAGS.includes(t));
-        if (contentTags.length === 0) {
-          key = 'Untagged';
-        } else {
-          key = contentTags[0];
-        }
-      }
+      if (groupBy === 'type') key = s.type;
+      else if (groupBy === 'paper') key = s.paper ? `Paper ${s.paper}` : 'Unassigned';
+      else key = extractDomain(s.origin);
       if (!groups[key]) groups[key] = [];
       groups[key].push(s);
     }
-
     return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
-  }, [filteredSources, groupBy]);
+  }, [allSources, groupBy]);
 
-  const availableTags = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const s of allSources) {
-      for (const t of s.tags) {
-        if (CONTENT_TAGS.includes(t)) {
-          counts[t] = (counts[t] || 0) + 1;
-        }
-      }
-    }
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([tag, count]) => ({ tag, count }));
-  }, [allSources]);
+  function toggleTag(tag: string) {
+    const next = activeTags.includes(tag) ? activeTags.filter(t => t !== tag) : [...activeTags, tag];
+    setTagsStr(next.join(','));
+  }
+
+  function clearAllFilters() {
+    setSearch('');
+    setTypeFilter('all');
+    setFormatFilter('all');
+    setStatusFilter('all');
+    setPaperStr('0');
+    setTagsStr('');
+  }
+
+  const hasActiveFilters = search || typeFilter !== 'all' || formatFilter !== 'all' || statusFilter !== 'all' || paperFilter !== 0 || activeTags.length > 0;
+
+  const activeFilterBadges: { label: string; clear: () => void }[] = [];
+  if (search) activeFilterBadges.push({ label: `Search: "${search}"`, clear: () => setSearch('') });
+  if (typeFilter !== 'all') activeFilterBadges.push({ label: `Type: ${typeFilter}`, clear: () => setTypeFilter('all') });
+  if (formatFilter !== 'all') activeFilterBadges.push({ label: `Format: ${formatFilter}`, clear: () => setFormatFilter('all') });
+  if (statusFilter !== 'all') activeFilterBadges.push({ label: `Status: ${statusFilter}`, clear: () => setStatusFilter('all') });
+  if (paperFilter) activeFilterBadges.push({ label: `Paper ${paperFilter}`, clear: () => setPaperStr('0') });
+  for (const t of activeTags) {
+    activeFilterBadges.push({ label: `Tag: ${t}`, clear: () => toggleTag(t) });
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold" style={{ color: 'var(--navy)' }}>Sources</h1>
         <span className="text-sm text-gray-500">
-          {filteredSources.length}{tagFilter ? ` / ${total}` : ''} source{filteredSources.length !== 1 ? 's' : ''}
+          {allSources.length}{hasActiveFilters ? ` / ${total}` : ''} source{allSources.length !== 1 ? 's' : ''}
         </span>
       </div>
 
@@ -241,22 +260,23 @@ export default function Sources() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search sources..."
+            placeholder="Search title and content..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg"
+            style={{ border: '1px solid var(--pink-light)' }}
           />
         </div>
 
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as SourceType | 'all')} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
           {SOURCE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
 
-        <select value={formatFilter} onChange={(e) => setFormatFilter(e.target.value as SourceFormat | 'all')} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+        <select value={formatFilter} onChange={(e) => setFormatFilter(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
           {SOURCE_FORMATS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
 
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as ExtractedStatus | 'all')} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
           {EXTRACTED_STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
 
@@ -264,10 +284,12 @@ export default function Sources() {
           {[0, 1, 2, 3, 4].map((p) => (
             <button
               key={p}
-              onClick={() => setPaperFilter(p)}
-              className={`px-2.5 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                paperFilter === p ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+              onClick={() => setPaperStr(String(p))}
+              className="px-2.5 py-1.5 text-xs font-medium rounded-md border transition-colors"
+              style={paperFilter === p
+                ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+                : { borderColor: '#f0e8e0' }
+              }
             >
               {p === 0 ? 'All' : `P${p}`}
             </button>
@@ -276,34 +298,61 @@ export default function Sources() {
 
         <select
           value={groupBy}
-          onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+          onChange={(e) => setGroupBy(e.target.value)}
           className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
         >
           <option value="none">No grouping</option>
-          <option value="type">Group by type</option>
-          <option value="paper">Group by paper</option>
-          <option value="tags">Group by tag</option>
+          <option value="type">Group by Type</option>
+          <option value="paper">Group by Paper</option>
+          <option value="origin">Group by Origin</option>
         </select>
       </div>
 
-      {/* Tag filter bar */}
-      {availableTags.length > 0 && (
+      {/* Active filter badges */}
+      {activeFilterBadges.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] text-gray-400 mr-1">Active:</span>
+          {activeFilterBadges.map((b) => (
+            <button
+              key={b.label}
+              onClick={b.clear}
+              className="tag-pill flex items-center gap-1 transition-colors"
+            >
+              {b.label}
+              <X size={10} />
+            </button>
+          ))}
+          <button
+            onClick={clearAllFilters}
+            className="text-[11px] text-gray-500 hover:text-gray-700 ml-1"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
+      {/* Tag filter chips */}
+      {topTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           <button
-            onClick={() => setTagFilter(null)}
-            className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
-              !tagFilter ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
-            }`}
+            onClick={() => setTagsStr('')}
+            className="px-2.5 py-1 text-xs font-medium rounded-full border transition-colors"
+            style={activeTags.length === 0
+              ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+              : { borderColor: '#f0e8e0' }
+            }
           >
             All tags
           </button>
-          {availableTags.map(({ tag, count }) => (
+          {topTags.map(({ tag, count }) => (
             <button
               key={tag}
-              onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
-                tagFilter === tag ? 'border-blue-400 bg-blue-50 text-blue-700' : `border-gray-200 bg-white hover:bg-gray-50 ${(TAG_COLORS[tag] || '').split(' ')[1] || 'text-gray-600'}`
-              }`}
+              onClick={() => toggleTag(tag)}
+              className="px-2.5 py-1 text-xs font-medium rounded-full border transition-colors"
+              style={activeTags.includes(tag)
+                ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+                : { borderColor: '#f0e8e0' }
+              }
             >
               {tag} ({count})
             </button>
@@ -312,16 +361,27 @@ export default function Sources() {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="card overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-gray-400">Loading...</div>
-        ) : filteredSources.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">No sources found</div>
+        ) : allSources.length === 0 ? (
+          <div className="p-12 text-center">
+            {hasActiveFilters ? (
+              <div className="space-y-2">
+                <Search size={28} className="mx-auto text-gray-300" />
+                <p className="text-sm text-gray-400">No sources match your filters</p>
+                <button onClick={clearAllFilters} className="text-xs font-medium" style={{ color: 'var(--pink-dark)' }}>
+                  Clear all filters
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No sources found</p>
+            )}
+          </div>
         ) : grouped ? (
-          /* Grouped view */
           <div>
-            {grouped.map(([group, items]) => (
-              <GroupSection key={group} title={group} count={items.length}>
+            {grouped.map(([group, items], idx) => (
+              <GroupSection key={group} title={group} count={items.length} defaultOpen={idx === 0}>
                 <table className="w-full text-sm">
                   <tbody>
                     {items.map((s) => (
@@ -333,11 +393,10 @@ export default function Sources() {
             ))}
           </div>
         ) : (
-          /* Flat view */
           <table className="w-full text-sm">
             <TableHeader />
             <tbody>
-              {filteredSources.map((s) => (
+              {allSources.map((s) => (
                 <SourceRow key={s._id} s={s} onClick={() => navigate(`/sources/${s._id}`)} />
               ))}
             </tbody>

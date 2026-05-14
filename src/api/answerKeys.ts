@@ -6,7 +6,7 @@ interface AnswerKeyListResponse {
   total: number;
 }
 
-export async function getAnswerKeys(filters?: { paper?: number; topic?: string; set?: string }) {
+export async function getAnswerKeys(filters?: { paper?: number; topic?: string; set?: string; search?: string }) {
   const { data } = await api.get<AnswerKeyListResponse>('/answer-keys', { params: filters });
   return data;
 }

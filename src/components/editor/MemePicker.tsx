@@ -74,7 +74,8 @@ export default function MemePicker({ open, onClose, onSelect }: MemePickerProps)
               placeholder="Search memes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg"
+              style={{ border: '1px solid var(--pink-light)' }}
               autoFocus
             />
           </div>
@@ -83,11 +84,11 @@ export default function MemePicker({ open, onClose, onSelect }: MemePickerProps)
               <button
                 key={cat.value}
                 onClick={() => setCategory(cat.value)}
-                className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
-                  category === cat.value
-                    ? 'bg-amber-100 text-amber-800 font-medium'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
+                className="px-2.5 py-1 text-xs rounded-full transition-colors"
+                style={category === cat.value
+                  ? { background: 'var(--pink-light)', color: 'var(--pink-dark)', fontWeight: 500 }
+                  : { background: '#f5f0eb' }
+                }
               >
                 {cat.label}
               </button>
@@ -112,7 +113,8 @@ export default function MemePicker({ open, onClose, onSelect }: MemePickerProps)
                     onSelect(meme);
                     onClose();
                   }}
-                  className="group relative rounded-lg overflow-hidden border border-gray-200 hover:border-amber-400 hover:shadow-md transition-all bg-gray-50 aspect-square"
+                  className="group relative rounded-lg overflow-hidden border hover:shadow-md transition-all aspect-square"
+                  style={{ borderColor: '#f0e8e0', background: 'var(--cream)' }}
                   title={meme.name}
                 >
                   <img

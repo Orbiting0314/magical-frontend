@@ -42,6 +42,23 @@ export interface Note extends NoteListItem {
   createdAt: string;
 }
 
+export interface NoteVersionSummary {
+  _id: string;
+  index: number;
+  changeNote: string;
+  createdBy: string;
+  createdAt: string;
+  length: number;
+}
+
+export interface NoteVersion {
+  _id: string;
+  markdown: string;
+  changeNote: string;
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface AnswerKeyListItem {
   _id: string;
   paper: number;
@@ -49,6 +66,7 @@ export interface AnswerKeyListItem {
   set: string;
   level: string;
   title: string;
+  noteId: string | null;
   updatedAt: string;
 }
 
@@ -99,6 +117,8 @@ export interface SourceListItem {
   originalFileSize: number | null;
   extractedStatus: ExtractedStatus;
   tags: string[];
+  snippet: string | null;
+  noteCount: number;
   updatedAt: string;
 }
 

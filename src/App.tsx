@@ -11,6 +11,7 @@ import AnswerKeys from './pages/AnswerKeys';
 import NoteEditor from './pages/NoteEditor';
 import Sources from './pages/Sources';
 import SourceDetail from './pages/SourceDetail';
+import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +48,7 @@ export default function App() {
               <Route path="answer-keys" element={<AnswerKeys />} />
               <Route path="sources" element={<Sources />} />
               <Route path="sources/:id" element={<SourceDetail />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
         </HashRouter>
