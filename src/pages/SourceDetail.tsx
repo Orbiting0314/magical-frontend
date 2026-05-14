@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Download, Save, Trash2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Download, Save, Trash2, ExternalLink, FileX } from 'lucide-react';
 import { marked } from 'marked';
 import toast from 'react-hot-toast';
 import { getSource, updateSource, deleteSource, getSourceFileUrl } from '../api/sources';
@@ -36,7 +36,7 @@ export default function SourceDetail() {
   const [extractedText, setExtractedText] = useState('');
   const [extractedStatus, setExtractedStatus] = useState<ExtractedStatus>('none');
   const [dirty, setDirty] = useState(false);
-  const [viewMode, setViewMode] = useState<'raw' | 'rendered'>('raw');
+  const [viewMode, setViewMode] = useState<'raw' | 'rendered'>('rendered');
 
   const renderedHtml = useMemo(() => {
     if (viewMode !== 'rendered' || !extractedText) return '';
@@ -89,6 +89,15 @@ export default function SourceDetail() {
   });
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [fileOk, setFileOk] = useState<boolean | null>(null);
+
+  const fileUrl = source?.originalFileKey ? getSourceFileUrl(id!) : null;
+
+  useEffect(() => {
+    if (!fileUrl) return;
+    setFileOk(null);
+    fetch(fileUrl, { method: 'HEAD' }).then(r => setFileOk(r.ok)).catch(() => setFileOk(false));
+  }, [fileUrl]);
 
   if (isLoading) {
     return <div className="p-8 text-center text-gray-400">Loading...</div>;
@@ -96,8 +105,6 @@ export default function SourceDetail() {
   if (!source) {
     return <div className="p-8 text-center text-gray-400">Source not found</div>;
   }
-
-  const fileUrl = source.originalFileKey ? getSourceFileUrl(id!) : null;
 
   const markDirty = () => { if (!dirty) setDirty(true); };
 
@@ -257,21 +264,36 @@ export default function SourceDetail() {
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
                 <h2 className="text-sm font-semibold text-gray-700">File Preview</h2>
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
-                >
-                  <Download size={12} /> Download
-                </a>
+                {fileOk && (
+                  <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    <Download size={12} /> Download
+                  </a>
+                )}
               </div>
-              <iframe
-                src={fileUrl}
-                className="w-full border-0"
-                style={{ height: '500px' }}
-                title="PDF Preview"
-              />
+              {fileOk === null && (
+                <div className="flex items-center justify-center py-12 text-sm text-gray-400">
+                  Checking file...
+                </div>
+              )}
+              {fileOk === false && (
+                <div className="flex flex-col items-center justify-center py-12 gap-2">
+                  <FileX size={28} className="text-gray-300" />
+                  <p className="text-sm text-gray-400">File not available</p>
+                </div>
+              )}
+              {fileOk && (
+                <iframe
+                  src={fileUrl}
+                  className="w-full border-0"
+                  style={{ height: '500px' }}
+                  title="PDF Preview"
+                />
+              )}
             </div>
           )}
 
