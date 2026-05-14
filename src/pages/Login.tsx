@@ -28,14 +28,11 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left: background image */}
-      <div
-        className="hidden md:block w-1/2"
-        style={{ background: 'var(--pink-light)' }}
-      >
+      <div className="hidden md:block w-1/2 h-screen overflow-hidden">
         <img
           src={loginBg}
           alt=""
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
         />
       </div>
 
