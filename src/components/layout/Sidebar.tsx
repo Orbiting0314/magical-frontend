@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { FileText, BookOpen, Key, Library, Clock, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { FileText, BookOpen, Key, Library, Clock, Sparkles, PanelLeftClose, PanelLeft } from 'lucide-react';
 
 const fullLogo = `${import.meta.env.BASE_URL}magical-logo.png`;
 
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/answer-keys', icon: Key, label: 'Answer Keys' },
   { to: '/sources', icon: Library, label: 'Sources' },
   { to: '/activity', icon: Clock, label: 'Activity' },
+  { to: '/skills', icon: Sparkles, label: 'Teaching DNA' },
 ];
 
 interface SidebarProps {
