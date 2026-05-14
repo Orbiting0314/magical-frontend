@@ -6,7 +6,7 @@ import { getComponents } from '../api/components';
 import { getNotes, createNote } from '../api/notes';
 import { getAnswerKeys } from '../api/answerKeys';
 import toast from 'react-hot-toast';
-import { PAPER_NAMES, TOPIC_NAMES, noteUrl } from '../types';
+import { PAPER_NAMES, TOPIC_NAMES, NOTE_TYPE_OPTIONS, noteUrl } from '../types';
 import type { NoteListItem } from '../types';
 import Pagination from '../components/ui/Pagination';
 import GroupSection from '../components/ui/GroupSection';
@@ -83,7 +83,7 @@ const DASH_PAGE_SIZE = 20;
 
 type SortKey = 'title' | 'paper' | 'status' | 'updatedAt';
 type SortDir = 'asc' | 'desc';
-type GroupBy = 'none' | 'paper' | 'status';
+type GroupBy = 'none' | 'paper' | 'status' | 'type';
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'updatedAt', label: 'Last Modified' },
@@ -227,6 +227,15 @@ function NoteRow({ note, onClick }: { note: NoteListItem; onClick: () => void })
       <td className="px-5 py-3 text-gray-600">{TOPIC_NAMES[note.topic] || note.topic}</td>
       <td className="px-5 py-3"><LevelBadge level={note.level} /></td>
       <td className="px-5 py-3"><StatusBadge status={note.status} /></td>
+      <td className="px-5 py-3">
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+          style={note.noteType === 'generated'
+            ? { background: '#ede9fe', color: '#6d28d9' }
+            : { background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+          }>
+          {note.noteType === 'generated' ? 'AI' : 'Custom'}
+        </span>
+      </td>
       <td className="px-5 py-3 text-gray-500 text-xs">{new Date(note.updatedAt).toLocaleDateString()}</td>
     </tr>
   );
@@ -239,6 +248,7 @@ export default function Dashboard() {
   const [searchText, setSearchText] = useState('');
   const [paperFilter, setPaperFilter] = useState<number | ''>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
   const [sortKey, setSortKey] = useState<SortKey>('updatedAt');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(0);
@@ -276,8 +286,11 @@ export default function Dashboard() {
     if (statusFilter) {
       result = result.filter(n => n.status === statusFilter);
     }
+    if (typeFilter) {
+      result = result.filter(n => n.noteType === typeFilter);
+    }
     return sortNotes(result, sortKey, sortDir);
-  }, [allNotes, searchText, paperFilter, statusFilter, sortKey, sortDir]);
+  }, [allNotes, searchText, paperFilter, statusFilter, typeFilter, sortKey, sortDir]);
 
   const pagedNotes = useMemo(() =>
     filteredNotes.slice(page * DASH_PAGE_SIZE, (page + 1) * DASH_PAGE_SIZE),
@@ -288,9 +301,10 @@ export default function Dashboard() {
     if (groupBy === 'none') return null;
     const groups: Record<string, NoteListItem[]> = {};
     for (const n of pagedNotes) {
-      const key = groupBy === 'paper'
-        ? (PAPER_NAMES[n.paper] || `Paper ${n.paper}`)
-        : n.status.charAt(0).toUpperCase() + n.status.slice(1);
+      let key: string;
+      if (groupBy === 'paper') key = PAPER_NAMES[n.paper] || `Paper ${n.paper}`;
+      else if (groupBy === 'type') key = n.noteType === 'generated' ? 'Generated' : 'Custom';
+      else key = n.status.charAt(0).toUpperCase() + n.status.slice(1);
       if (!groups[key]) groups[key] = [];
       groups[key].push(n);
     }
@@ -313,7 +327,7 @@ export default function Dashboard() {
     }
   }
 
-  const hasFilters = searchText || paperFilter !== '' || statusFilter;
+  const hasFilters = searchText || paperFilter !== '' || statusFilter || typeFilter;
 
   return (
     <div className="space-y-6">
@@ -387,6 +401,15 @@ export default function Dashboard() {
             <option value="published">Published</option>
           </select>
           <select
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value); handleFilterChange(); }}
+            className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white"
+          >
+            {NOTE_TYPE_OPTIONS.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as GroupBy)}
             className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white"
@@ -394,6 +417,7 @@ export default function Dashboard() {
             <option value="none">No grouping</option>
             <option value="paper">Group by Paper</option>
             <option value="status">Group by Status</option>
+            <option value="type">Group by Type</option>
           </select>
           <div className="flex items-center gap-1 ml-auto">
             <ArrowUpDown size={12} className="text-gray-400" />
@@ -424,7 +448,7 @@ export default function Dashboard() {
                 <Search size={28} className="mx-auto text-gray-300" />
                 <p className="text-sm text-gray-400">No notes match your filters</p>
                 <button
-                  onClick={() => { setSearchText(''); setPaperFilter(''); setStatusFilter(''); handleFilterChange(); }}
+                  onClick={() => { setSearchText(''); setPaperFilter(''); setStatusFilter(''); setTypeFilter(''); handleFilterChange(); }}
                   className="text-xs font-medium"
                   style={{ color: 'var(--pink-dark)' }}
                 >
@@ -478,6 +502,7 @@ export default function Dashboard() {
                 <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('status')}>
                   Status {sortKey === 'status' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
                 </th>
+                <th className="px-5 py-2.5">Type</th>
                 <th className="px-5 py-2.5 cursor-pointer hover:text-gray-700" onClick={() => toggleSort('updatedAt')}>
                   Modified {sortKey === 'updatedAt' && (sortDir === 'asc' ? '\u2191' : '\u2193')}
                 </th>

@@ -24,6 +24,8 @@ export interface Component extends ComponentListItem {
   createdAt: string;
 }
 
+export type NoteType = 'generated' | 'custom';
+
 export interface NoteListItem {
   _id: string;
   title: string;
@@ -32,6 +34,7 @@ export interface NoteListItem {
   level: string;
   set: string | null;
   status: 'draft' | 'published';
+  noteType: NoteType;
   updatedAt: string;
 }
 
@@ -198,6 +201,12 @@ export const COMPONENT_TYPE_COLORS: Record<ComponentType, { bg: string; text: st
   phrases:           { bg: 'bg-teal-100',   text: 'text-teal-800',   border: 'border-teal-400' },
   drill:             { bg: 'bg-orange-100',  text: 'text-orange-800',  border: 'border-orange-400' },
 };
+
+export const NOTE_TYPE_OPTIONS: { value: NoteType | ''; label: string }[] = [
+  { value: '', label: 'All types' },
+  { value: 'generated', label: 'Generated' },
+  { value: 'custom', label: 'Custom' },
+];
 
 export const PAPER_NAMES: Record<number, string> = {
   1: 'Paper 1 - Reading',

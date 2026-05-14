@@ -230,6 +230,13 @@ export default function NoteEditor() {
         <span style={{ color: 'var(--navy)' }} className="font-medium">
           {note.title}
         </span>
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+          style={note.noteType === 'generated'
+            ? { background: '#ede9fe', color: '#6d28d9' }
+            : { background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+          }>
+          {note.noteType === 'generated' ? 'AI Generated' : 'Custom'}
+        </span>
         <div className="flex-1" />
         <button
           onClick={() => setHistoryOpen(v => !v)}
