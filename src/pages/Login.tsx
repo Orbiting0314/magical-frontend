@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 const fullLogo = `${import.meta.env.BASE_URL}magical-logo.png`;
+const loginBg = `${import.meta.env.BASE_URL}login-bg.png`;
 
 export default function Login() {
   const [password, setPassword] = useState('');
@@ -28,12 +29,15 @@ export default function Login() {
     <div className="min-h-screen flex">
       {/* Left: background image */}
       <div
-        className="hidden md:flex w-1/2 items-center justify-center"
-        style={{
-          background: `var(--pink-light) url(${fullLogo}) no-repeat center center`,
-          backgroundSize: '60%',
-        }}
-      />
+        className="hidden md:block w-1/2"
+        style={{ background: 'var(--pink-light)' }}
+      >
+        <img
+          src={loginBg}
+          alt=""
+          className="w-full h-full object-contain"
+        />
+      </div>
 
       {/* Right: login form */}
       <div
