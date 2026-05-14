@@ -59,7 +59,7 @@ export default function App() {
               <Route path="sources" element={<Sources />} />
               <Route path="sources/:id" element={<SourceDetail />} />
               <Route path="activity" element={<ActivityLog />} />
-              <Route path="skills" element={<Skills />} />
+              <Route path="dna" element={<Skills />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

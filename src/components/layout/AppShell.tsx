@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { LogOut } from 'lucide-react';
 
 export default function AppShell() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const { logout } = useAuth();
 
   return (
