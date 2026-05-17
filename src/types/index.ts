@@ -35,6 +35,9 @@ export interface NoteListItem {
   set: string | null;
   status: 'draft' | 'published';
   noteType: NoteType;
+  pinnedAt: string | null;
+  deletedAt: string | null;
+  excerpt: string;
   updatedAt: string;
 }
 

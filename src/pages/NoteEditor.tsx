@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useMemo, useEffect, useState } from 'react';
-import { ArrowLeft, History } from 'lucide-react';
+import { ArrowLeft, History, Pin, Copy } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -11,7 +11,7 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import toast from 'react-hot-toast';
-import { getNote, updateNote, restoreNoteVersion } from '../api/notes';
+import { getNote, updateNote, restoreNoteVersion, duplicateNote } from '../api/notes';
 import { markdownToHtml, htmlToMarkdown } from '../lib/serializer';
 import { PAPER_NAMES, TOPIC_NAMES, noteUrl } from '../types';
 import EditorToolbar from '../components/editor/EditorToolbar';
@@ -169,6 +169,26 @@ export default function NoteEditor() {
     }
   }
 
+  const pinMutation = useMutation({
+    mutationFn: (pinnedAt: string | null) => updateNote(id!, { pinnedAt }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['note', id], updated);
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      toast.success(updated.pinnedAt ? 'Note pinned' : 'Note unpinned');
+    },
+    onError: () => { toast.error('Failed to toggle pin'); },
+  });
+
+  const dupMutation = useMutation({
+    mutationFn: () => duplicateNote(id!),
+    onSuccess: (newNote) => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      toast.success('Note duplicated');
+      navigate(noteUrl(newNote));
+    },
+    onError: () => { toast.error('Failed to duplicate note'); },
+  });
+
   const [historyOpen, setHistoryOpen] = useState(false);
 
   function handleComponentInserted(componentId: string) {
@@ -238,6 +258,27 @@ export default function NoteEditor() {
           {note.noteType === 'generated' ? 'AI Generated' : 'Custom'}
         </span>
         <div className="flex-1" />
+        <button
+          onClick={() => pinMutation.mutate(note.pinnedAt ? null : new Date().toISOString())}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
+          style={note.pinnedAt
+            ? { background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+            : { color: 'var(--navy-light)' }
+          }
+          title={note.pinnedAt ? 'Unpin' : 'Pin to dashboard'}
+        >
+          {note.pinnedAt ? <Pin size={13} className="fill-current" /> : <Pin size={13} />}
+          {note.pinnedAt ? 'Pinned' : 'Pin'}
+        </button>
+        <button
+          onClick={() => dupMutation.mutate()}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
+          style={{ color: 'var(--navy-light)' }}
+          title="Duplicate this note"
+        >
+          <Copy size={13} />
+          Duplicate
+        </button>
         <button
           onClick={() => setHistoryOpen(v => !v)}
           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"

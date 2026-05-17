@@ -3,7 +3,7 @@ import type { Editor } from '@tiptap/react';
 import {
   Bold, Italic, Strikethrough, Heading2, Heading3,
   List, ListOrdered, Undo2, Redo2, Save, ImagePlus,
-  LayoutGrid, ChevronDown, Library, Keyboard, Upload, X,
+  ChevronDown, Library, Keyboard, Upload, X, Plus,
 } from 'lucide-react';
 import MemePicker from './MemePicker';
 import ComponentPicker from './ComponentPicker';
@@ -18,11 +18,14 @@ interface ContainerDef {
   color: string;
 }
 
-const CONTAINERS: ContainerDef[] = [
-  { type: 'skill', label: 'Key Skill', desc: 'Technique or strategy', attrs: { icon: 'melody' }, placeholder: 'Describe the key technique...', color: '#F4A7BB' },
-  { type: 'warning', label: 'Common Mistake', desc: 'What to avoid', attrs: { icon: 'kuromi' }, placeholder: 'Describe the common mistake...', color: '#E8A0A0' },
-  { type: 'hkeaa', label: 'HKEAA Remarks', desc: 'Examiner quote or note', attrs: { year: 2024 }, placeholder: 'Paste HKEAA examiner remark...', color: '#C9A962' },
-  { type: 'training', label: 'Training', desc: 'Practice space for students', attrs: { lines: 6 }, placeholder: 'Write the practice prompt...', color: '#CCC' },
+const TOP_CONTAINERS: (ContainerDef & { shortLabel: string })[] = [
+  { type: 'skill', label: 'Key Skill', shortLabel: 'Skill', desc: 'Technique or strategy', attrs: { icon: 'melody' }, placeholder: 'Describe the key technique...', color: '#F4A7BB' },
+  { type: 'warning', label: 'Common Mistake', shortLabel: 'Mistake', desc: 'What to avoid', attrs: { icon: 'kuromi' }, placeholder: 'Describe the common mistake...', color: '#E8A0A0' },
+  { type: 'training', label: 'Training', shortLabel: 'Train', desc: 'Practice space for students', attrs: { lines: 6 }, placeholder: 'Write the practice prompt...', color: '#CCC' },
+  { type: 'hkeaa', label: 'HKEAA Remarks', shortLabel: 'HKEAA', desc: 'Examiner quote or note', attrs: { year: 2024 }, placeholder: 'Paste HKEAA examiner remark...', color: '#C9A962' },
+];
+
+const MORE_CONTAINERS: ContainerDef[] = [
   { type: 'answer', label: 'Model Answer', desc: 'Sample or model response', placeholder: 'Write the model answer...', color: '#999' },
   { type: 'question', label: 'Past Paper Question', desc: 'HKDSE question reference', attrs: { year: 2024, paper: 1 }, placeholder: 'Paste or describe the question...', color: '#2C3E50' },
   { type: 'level-compare', label: 'Level Compare', desc: 'Side-by-side 3/4/5 comparison', placeholder: 'Add level comparison content...', color: '#4A6FA5' },
@@ -30,6 +33,8 @@ const CONTAINERS: ContainerDef[] = [
   { type: 'phrases', label: 'Phrase Bank', desc: 'Useful phrases collection', attrs: { title: 'Useful Phrases' }, placeholder: 'Add phrases...', color: '#C9A962' },
   { type: 'exam-sample', label: 'Exam Sample', desc: 'Past paper sample reference', attrs: { year: 2024, paper: 2 }, placeholder: 'Add exam sample content...', color: '#666' },
 ];
+
+const CONTAINERS: ContainerDef[] = [...TOP_CONTAINERS, ...MORE_CONTAINERS];
 
 interface ToolbarProps {
   editor: Editor | null;
@@ -88,7 +93,7 @@ function buildContainerHtml(def: ContainerDef): string {
   );
 }
 
-function ContainerDropdown({ editor }: { editor: Editor }) {
+function MoreContainersDropdown({ editor }: { editor: Editor }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -111,22 +116,22 @@ function ContainerDropdown({ editor }: { editor: Editor }) {
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        title="Insert Container Block"
-        className="flex items-center gap-0.5 px-1.5 py-1 rounded transition-colors hover:text-gray-700"
+        title="More Containers"
+        className="flex items-center gap-0.5 px-1.5 py-1 rounded transition-colors hover:text-gray-700 text-[11px] font-medium"
         style={{
-          color: open ? 'var(--pink-dark)' : undefined,
+          color: open ? 'var(--pink-dark)' : 'var(--navy-light)',
           background: open ? 'var(--pink-light)' : undefined,
         }}
       >
-        <LayoutGrid size={15} />
-        <ChevronDown size={10} />
+        <Plus size={12} />
+        <ChevronDown size={9} />
       </button>
       {open && (
         <div className="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-[70vh] overflow-y-auto">
           <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-            Insert Container
+            More Containers
           </div>
-          {CONTAINERS.map(def => (
+          {MORE_CONTAINERS.map(def => (
             <button
               key={def.type}
               type="button"
@@ -377,7 +382,20 @@ export default function EditorToolbar({ editor, onSave, saveStatus, noteStatus, 
 
       <Sep />
 
-      <ContainerDropdown editor={editor} />
+      {TOP_CONTAINERS.map(def => (
+        <button
+          key={def.type}
+          type="button"
+          onClick={() => editor.chain().focus().insertContent(buildContainerHtml(def)).run()}
+          title={def.label}
+          className="flex items-center gap-1 px-1.5 py-1 rounded text-[11px] font-medium transition-colors hover:opacity-80"
+          style={{ color: def.color === '#CCC' ? '#666' : def.color }}
+        >
+          <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: def.color }} />
+          {def.shortLabel}
+        </button>
+      ))}
+      <MoreContainersDropdown editor={editor} />
 
       <Sep />
 

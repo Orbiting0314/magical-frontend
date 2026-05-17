@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { FileText, BookOpen, Key, Library, Clock, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { FileText, BookOpen, Key, Library, Clock, Sparkles, PanelLeftClose, PanelLeft, Search, Trash2 } from 'lucide-react';
 
 const fullLogo = `${import.meta.env.BASE_URL}magical-logo.png`;
 
@@ -9,6 +9,11 @@ const NAV_ITEMS = [
   { to: '/answer-keys', icon: Key, label: 'Answer Keys' },
   { to: '/sources', icon: Library, label: 'Sources' },
   { to: '/activity', icon: Clock, label: 'Activity' },
+  { to: '/skills', icon: Sparkles, label: 'Teaching DNA' },
+];
+
+const BOTTOM_NAV = [
+  { to: '/trash', icon: Trash2, label: 'Trash' },
 ];
 
 interface SidebarProps {
@@ -71,6 +76,23 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       )}
 
       <nav className="flex-1 px-2 py-2 space-y-0.5">
+        <button
+          onClick={() => {
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
+          }}
+          className={`sidebar-nav-item w-full ${collapsed ? 'justify-center px-0' : ''}`}
+        >
+          <Search size={18} />
+          {!collapsed && (
+            <>
+              <span className="flex-1 text-left">Search</span>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono text-gray-400 border border-gray-200 rounded">
+                {typeof navigator !== 'undefined' && navigator.platform?.toUpperCase().includes('MAC') ? 'Cmd' : 'Ctrl'}+K
+              </kbd>
+            </>
+          )}
+        </button>
+
         {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -85,6 +107,21 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </NavLink>
         ))}
       </nav>
+
+      <div className="px-2 py-2 space-y-0.5">
+        {BOTTOM_NAV.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              `sidebar-nav-item ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`
+            }
+          >
+            <Icon size={18} />
+            {!collapsed && <span>{label}</span>}
+          </NavLink>
+        ))}
+      </div>
 
       {!collapsed && (
         <div className="px-4 py-3 text-[10px] tracking-wide" style={{ color: 'var(--pink-dark)', opacity: 0.5 }}>

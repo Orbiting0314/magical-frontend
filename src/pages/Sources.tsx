@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, FileDown, FileText, Globe, Image, X, FileStack } from 'lucide-react';
+import { Search, FileDown, FileText, Globe, Image, X, FileStack, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { getSources, getSourceTags } from '../api/sources';
 import { SOURCE_TYPES, SOURCE_FORMATS, EXTRACTED_STATUS_OPTIONS } from '../types';
 import type { SourceListItem } from '../types';
@@ -239,6 +239,15 @@ export default function Sources() {
     activeFilterBadges.push({ label: `Tag: ${t}`, clear: () => toggleTag(t) });
   }
 
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const advancedFilterCount = [
+    typeFilter !== 'all',
+    formatFilter !== 'all',
+    statusFilter !== 'all',
+    activeTags.length > 0,
+  ].filter(Boolean).length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -248,38 +257,26 @@ export default function Sources() {
         </span>
       </div>
 
-      {/* Filters row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* Search bar + paper buttons */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search title and content..."
+            placeholder="Search sources... e.g. complaint letter HKEAA"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg"
-            style={{ border: '1px solid var(--pink-light)' }}
+            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl"
+            style={{ border: '1px solid var(--pink-light)', background: 'white' }}
           />
         </div>
-
-        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
-          {SOURCE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
-
-        <select value={formatFilter} onChange={(e) => { setFormatFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
-          {SOURCE_FORMATS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-        </select>
-
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
-          {EXTRACTED_STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
 
         <div className="flex gap-1">
           {[0, 1, 2, 3, 4].map((p) => (
             <button
               key={p}
               onClick={() => { setPaperStr(String(p)); setPage(0); }}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-md border transition-colors"
+              className="px-2.5 py-2 text-xs font-medium rounded-lg border transition-colors"
               style={paperFilter === p
                 ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
                 : { borderColor: '#f0e8e0' }
@@ -290,20 +287,27 @@ export default function Sources() {
           ))}
         </div>
 
-        <select
-          value={groupBy}
-          onChange={(e) => setGroupBy(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
+        <button
+          onClick={() => setFiltersOpen(v => !v)}
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors"
+          style={filtersOpen || advancedFilterCount > 0
+            ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+            : { borderColor: '#f0e8e0', color: 'var(--navy-light)' }
+          }
         >
-          <option value="type">Group by Type</option>
-          <option value="none">No grouping</option>
-          <option value="paper">Group by Paper</option>
-          <option value="origin">Group by Origin</option>
-        </select>
+          <SlidersHorizontal size={13} />
+          Filters
+          {advancedFilterCount > 0 && (
+            <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'var(--pink-dark)', color: 'white' }}>
+              {advancedFilterCount}
+            </span>
+          )}
+          <ChevronDown size={10} className={`transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+        </button>
       </div>
 
-      {/* Active filter badges */}
-      {activeFilterBadges.length > 0 && (
+      {/* Active filter badges (always visible when filters collapsed and active) */}
+      {!filtersOpen && activeFilterBadges.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] text-gray-400 mr-1">Active:</span>
           {activeFilterBadges.map((b) => (
@@ -325,32 +329,71 @@ export default function Sources() {
         </div>
       )}
 
-      {/* Tag filter chips */}
-      {topTags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setTagsStr('')}
-            className="px-2.5 py-1 text-xs font-medium rounded-full border transition-colors"
-            style={activeTags.length === 0
-              ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
-              : { borderColor: '#f0e8e0' }
-            }
-          >
-            All tags
-          </button>
-          {topTags.map(({ tag, count }) => (
-            <button
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              className="px-2.5 py-1 text-xs font-medium rounded-full border transition-colors"
-              style={activeTags.includes(tag)
-                ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
-                : { borderColor: '#f0e8e0' }
-              }
+      {/* Advanced filters (collapsible) */}
+      {filtersOpen && (
+        <div className="card p-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+              {SOURCE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+
+            <select value={formatFilter} onChange={(e) => { setFormatFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+              {SOURCE_FORMATS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+            </select>
+
+            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+              {EXTRACTED_STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+
+            <select
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
             >
-              {tag} ({count})
-            </button>
-          ))}
+              <option value="type">Group by Type</option>
+              <option value="none">No grouping</option>
+              <option value="paper">Group by Paper</option>
+              <option value="origin">Group by Origin</option>
+            </select>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="text-xs font-medium ml-auto"
+                style={{ color: 'var(--pink-dark)' }}
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+
+          {topTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setTagsStr('')}
+                className="px-2.5 py-1 text-xs font-medium rounded-full border transition-colors"
+                style={activeTags.length === 0
+                  ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+                  : { borderColor: '#f0e8e0' }
+                }
+              >
+                All tags
+              </button>
+              {topTags.map(({ tag, count }) => (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full border transition-colors"
+                  style={activeTags.includes(tag)
+                    ? { borderColor: 'var(--pink)', background: 'var(--pink-light)', color: 'var(--pink-dark)' }
+                    : { borderColor: '#f0e8e0' }
+                  }
+                >
+                  {tag} ({count})
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

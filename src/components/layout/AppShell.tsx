@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './Sidebar';
+import GlobalSearch from './GlobalSearch';
 import { useAuth } from '../../hooks/useAuth';
 import { LogOut } from 'lucide-react';
 
 export default function AppShell() {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const { logout } = useAuth();
 
   return (
@@ -25,6 +26,7 @@ export default function AppShell() {
           },
         }}
       />
+      <GlobalSearch />
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
       <div
         className="transition-all duration-200"
