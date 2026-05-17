@@ -34,8 +34,6 @@ const MORE_CONTAINERS: ContainerDef[] = [
   { type: 'exam-sample', label: 'Exam Sample', desc: 'Past paper sample reference', attrs: { year: 2024, paper: 2 }, placeholder: 'Add exam sample content...', color: '#666' },
 ];
 
-const CONTAINERS: ContainerDef[] = [...TOP_CONTAINERS, ...MORE_CONTAINERS];
-
 interface ToolbarProps {
   editor: Editor | null;
   onSave: () => void;
